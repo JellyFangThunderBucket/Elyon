@@ -44,3 +44,12 @@ The workflow checks source, recovery hashes, palette contrast, formatting,
 unit tests, typing, and packaging. Real browser checks are explicit commands;
 they require system Chromium with its sandbox enabled and the workbench/Chii
 servers where indicated. Nothing substitutes emulation for physical iPhone tests.
+
+## iPhone usability continuation
+
+The current page-console work builds on merged main `c9c9710`; the new baseline
+is documented in BASELINE-IPHONE.md. `network.js` and `page-runtime.js` isolate
+page-level observation helpers. The standalone device lab is built by
+`tools/build-demo.mjs` into `dist/iphone-demo/`. It contains no Python API, broker,
+Chii server, or credentials. Browser regressions are reproducible with
+`python tools/run_browser_checks.py`; deployment remains a separate manual workflow.

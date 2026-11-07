@@ -7,10 +7,33 @@ The repository is now organized: active source lives in `elyon/`, tests in
 `tests/`, documentation in `docs/`, and all original uploads are preserved under
 `recovery/`. See [the repository audit](docs/REPOSITORY-AUDIT.md).
 
-## Try it
+## Try the standalone phone console
 
-Requirements: Python 3.12+, Node 20+, and sandbox-capable system Chromium at
-`/usr/bin/chromium` (the browser capture harness uses Playwright).
+The deployable device lab needs only static HTTPS hosting. Python, the broker,
+and Chii are not required to display or exercise its tools.
+
+```sh
+npm ci
+npm run build:demo
+npm run preview:demo
+# Desktop preview: http://127.0.0.1:4173
+```
+
+For your iPhone, follow [the exact HTTPS deployment and device-test instructions](docs/IPHONE-TESTING.md).
+The manual **Publish static iPhone demo** GitHub Actions workflow deploys only
+`dist/iphone-demo/` after Pages is enabled. No deployment URL is claimed live by
+this source change. The local preview binds to loopback and is not a phone URL.
+
+The square console supports dragging/resizing, visual-viewport layout, Console,
+Fetch/XHR metadata, Elements picking/metadata/highlighting, Storage editing, Info
+capability states, and all 20 existing themes. Use JS or Await mode for evaluation.
+It observes only the document in which it is installed.
+
+## Independent evidence workbench
+
+The desktop broker/capture harness still requires Python 3.12+, Node 20+, system
+Chromium (`/usr/bin/chromium` by default), and Playwright. Keep it separate from
+public static hosting:
 
 ```sh
 python3 -m venv .venv
@@ -18,40 +41,22 @@ python3 -m venv .venv
 python -m pip install -e '.[dev]'
 npm ci
 npm start
-```
-
-Open **http://127.0.0.1:8080/demo** for the square mobile page console. Settings
-is pinned beside the scrollable tool tabs and includes 20 original themes. Try
-Console, Network, Elements, Storage, and Info. Preferences persist on this origin.
-
-Open **http://127.0.0.1:8080** for the independent evidence workbench. Click **Run browser capture** to exercise actual
-redirects, a five-second page stall, independent broker controls, and renderer
-termination. Inspect individual observations, filter requests, and export a
-redacted archive. Import opens an archive in the browser after a digest check;
-use the CLI import for complete semantic replay validation.
-
-In a second terminal:
-
-```sh
+# http://127.0.0.1:8080
+# Optional second terminal:
 npm run chii
+# http://127.0.0.1:8090
 ```
 
-Choose **Live inspection → Open playground**, then **Connect Chii** in the
-playground. Open **http://127.0.0.1:8090**, select the Elyon playground target,
-and click Inspect. The counter and Fetch buttons provide inspectable activity.
-Chii's script is loaded only after choosing Connect.
-
-Both services default to loopback. To connect an iPhone on a trusted LAN, run
-`npx chii start -h 0.0.0.0 -p 8090 -d YOUR_LAN_IP:8090` and use
-`http://YOUR_LAN_IP:8090` in the generated script on a page you control.
-HTTPS pages require an HTTPS/WSS endpoint and appropriate CSP permissions.
-Chii has no authentication by default: do not expose that server publicly.
-Its JavaScript instrumentation can change page behavior. It is separate from
-Elyon's metadata-only browser harness and durable evidence broker.
+Use **Run browser capture** for actual redirects, a five-second stall, independent
+controls, and renderer termination. The workbench ties each status to its current
+run ID; repeated captures cannot reuse a previous run's success display.
+`/demo` retains the opt-in Chii playground for local integration testing. Chii binds
+to loopback by default. Do not publish unauthenticated Chii or broker endpoints.
 
 ## Use the page console on a development page
 
-Serve the three assets `mobile-console.js`, `mobile-console.css`, and `themes.js`
+Serve the five assets `mobile-console.js`, `mobile-console.css`, `network.js`,
+`page-runtime.js`, and `themes.js`
 from an origin your page permits, keeping them in the same directory. Then:
 
 ```html
@@ -62,7 +67,8 @@ from an origin your page permits, keeping them in the same directory. Then:
 ```
 
 The console instruments console methods, Fetch, and XHR in that page; this may
-change timing and function identity. It does not capture response bodies. Use
+change timing and function/Promise identity. See [the instrumentation contract](docs/PAGE-INSTRUMENTATION.md)
+for event ordering, reuse, cleanup, retention, and observation limits. It does not capture response bodies. Use
 `window.elyonConsole.destroy()` to remove it. Settings affect only that origin.
 Storage viewing exposes page values locally; exported sessions redact messages
 and URLs. JavaScript execution can be disabled in Settings. The overlay does not
@@ -96,15 +102,18 @@ original uploads, which are intentionally excluded from the Python distribution.
 python tools/check_recovery.py
 npm run check:themes
 npm run format:check
+npm run build:demo
 python -m unittest discover -v
-python -m unittest validation.browser_check -v
+python tools/run_browser_checks.py
 python -m mypy elyon
 python -m ruff check .
 python -m ruff format --check elyon tests validation
 python -m build
-# With npm start and npm run chii running:
-python validation/workbench_check.py
-python validation/mobile_console_check.py
+# The runner owns its loopback workbench/Chii and executes:
+# python -m unittest validation.browser_check -v
+# python -m unittest validation.iphone_regression -v
+# python validation/workbench_check.py
+# python validation/mobile_console_check.py
 ```
 
 Keep Chromium's sandbox enabled. In a nested execution sandbox, launch browser
@@ -124,3 +133,7 @@ the current recovery report distinguishes newly rerun checks.
 Read [the product direction](docs/PRODUCT-DIRECTION.md) for the phone walkthrough
 and [the Gecko integration research](docs/GECKO.md) for Reynard, native adapter
 boundaries, Apple engine pathways, and physical-device acceptance gates.
+
+The newly verified baseline is [recorded separately](docs/BASELINE-IPHONE.md).
+No physical iPhone, iOS 27 keyboard, native Gecko, or privileged Safari validation
+is claimed. See [current verification](docs/VERIFICATION.md) for exact results.

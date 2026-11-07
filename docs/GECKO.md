@@ -1,6 +1,7 @@
 # Gecko integration: a separate engine project
 
-Research checked 2026-11-07. No native Gecko integration is implemented in this PR.
+Research checked 2026-11-07. No native Gecko integration is implemented.
+For page-level console testing in Reynard today, use [the static device lab guide](IPHONE-TESTING.md).
 
 Gecko is a native rendering engine, not a script the console can import.
 [Mozilla's GeckoView SDK](https://firefox-source-docs.mozilla.org/mobile/android/geckoview/index.html)

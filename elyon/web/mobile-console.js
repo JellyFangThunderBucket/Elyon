@@ -1,4 +1,6 @@
 import { THEMES, applyTheme } from "./themes.js";
+import { preview, replaceMethod } from "./page-runtime.js";
+import { installNetwork } from "./network.js";
 
 const DEFAULTS = {
   theme: "basalt-circuit",
@@ -14,25 +16,76 @@ const DEFAULTS = {
   autoOpenError: false,
   jsExecution: true,
   maxRows: 500,
+  panelY: 1,
+  launcherX: 0.95,
+  launcherY: 0.9,
 };
 const KEY = "elyon.mobile.settings.v1";
+let instance;
+const REGISTRY = Symbol.for("elyon.page.console.instance");
 export function createConsole() {
-  if (window.elyonConsole) return window.elyonConsole;
+  if (instance) return instance;
+  const registered = window[REGISTRY];
+  if (
+    registered?.source === "elyon-page-console" &&
+    registered.snapshot().installed
+  )
+    return registered;
+  if (document.getElementById("elyon-console"))
+    throw new Error("An unrelated element owns #elyon-console");
   let settings = { ...DEFAULTS };
+  let preferences = { status: "available", reason: "origin-storage-read" },
+    raw = null;
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
-    for (const key of Object.keys(DEFAULTS))
-      if (typeof saved[key] === typeof DEFAULTS[key])
-        settings[key] = saved[key];
+    raw = localStorage.getItem(KEY);
   } catch {
-    /* Storage can be blocked by the inspected page. */
+    preferences = { status: "denied", reason: "storage-read-failed" };
   }
+  if (raw !== null)
+    try {
+      const saved = JSON.parse(raw);
+      if (!saved || typeof saved !== "object" || Array.isArray(saved))
+        throw new Error("invalid-preferences");
+      for (const key of Object.keys(DEFAULTS))
+        if (typeof saved[key] === typeof DEFAULTS[key])
+          settings[key] = saved[key];
+    } catch {
+      preferences = {
+        status: "invalid",
+        reason: "malformed-preferences-defaults-used",
+      };
+    }
   settings.fontSize = Math.max(11, Math.min(20, settings.fontSize));
   settings.height = Math.max(30, Math.min(100, settings.height));
   settings.opacity = Math.max(0.85, Math.min(1, settings.opacity));
   settings.maxRows = [100, 500, 1000, 2000].includes(settings.maxRows)
     ? settings.maxRows
     : 500;
+  for (const key of ["panelY", "launcherX", "launcherY"])
+    settings[key] = Math.max(0, Math.min(1, settings[key]));
+  const capabilities = {
+    evaluation: { status: "not-probed", reason: "checked-on-execution" },
+    nativeGecko: { status: "unsupported", reason: "no-native-bridge" },
+    broker: { status: "not-connected", reason: "page-only-session" },
+    preferences,
+    pointerEvents: {
+      status: typeof PointerEvent === "function" ? "available" : "unsupported",
+      reason:
+        typeof PointerEvent === "function"
+          ? "pointer-events"
+          : "keyboard-handles-only",
+    },
+    visualViewport: {
+      status: window.visualViewport ? "available" : "unsupported",
+      reason: window.visualViewport
+        ? "visual-viewport"
+        : "layout-viewport-fallback",
+    },
+    styles: { status: "loading", reason: "stylesheet-requested" },
+  };
+  const capability = (name, value) => {
+    capabilities[name] = { status: value.status, reason: value.reason };
+  };
   const host = document.createElement("div");
   host.id = "elyon-console";
   host.style.cssText =
@@ -41,18 +94,25 @@ export function createConsole() {
   const style = document.createElement("link");
   style.rel = "stylesheet";
   style.href = new URL("./mobile-console.css", import.meta.url).href;
+  style.onload = () =>
+    capability("styles", { status: "available", reason: "stylesheet-loaded" });
+  style.onerror = () =>
+    capability("styles", {
+      status: "denied",
+      reason: "stylesheet-unavailable-or-blocked",
+    });
   root.append(style);
   const shell = document.createElement("div");
   shell.className = "elyon-shell";
   shell.innerHTML = `
   <button class="launcher" aria-label="Open Elyon console">E_</button>
   <section class="console" aria-label="Elyon developer console" hidden>
-   <header><b>ELYON<span> / PAGE CONSOLE</span></b><div><button id="export">Export redacted</button><button id="close" aria-label="Minimize console">−</button></div></header>
+   <header><button id="move-handle" aria-label="Move console" title="Drag to move; arrow keys move panel">⠿ ELYON</button><div><button id="size-handle" aria-label="Resize console" title="Drag or use arrow keys to resize">↕</button><button id="export" aria-label="Export redacted session">Export</button><button id="close" aria-label="Minimize console">−</button></div></header>
    <nav aria-label="Console panels" role="tablist"><div class="scroll-tabs"><button role="tab" data-tab="console">Console</button><button role="tab" data-tab="network">Network</button><button role="tab" data-tab="elements">Elements</button><button role="tab" data-tab="storage">Storage</button><button role="tab" data-tab="info">Info</button></div><button role="tab" data-tab="settings" id="settings-tab">⚙ Settings</button></nav>
-   <div class="panel" id="console-panel" role="tabpanel"><div class="toolbar"><select id="level" aria-label="Log level"><option value="">All levels</option><option>log</option><option>info</option><option>warn</option><option>error</option><option>debug</option><option>result</option></select><input id="log-search" placeholder="Filter logs" aria-label="Filter console logs"><button id="clear">Clear view</button></div><div id="logs" class="rows" role="log" aria-label="Console output"></div><form id="repl"><label for="expression">❯</label><input id="expression" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="JavaScript in this page" aria-label="JavaScript expression"><button>Run</button></form></div>
-   <div class="panel" id="network-panel" role="tabpanel" hidden><div class="toolbar"><span>Fetch + XHR · metadata only</span><button id="clear-network">Clear view</button></div><div class="rows" id="requests"></div></div>
-   <div class="panel" id="elements-panel" role="tabpanel" hidden><form id="selector-form" class="toolbar"><input id="selector" value="body" aria-label="CSS selector"><button>Inspect</button><button type="button" id="highlight">Highlight</button></form><div class="rows"><p id="element-summary"></p><pre id="element-output"></pre></div></div>
-   <div class="panel" id="storage-panel" role="tabpanel" hidden><div class="toolbar"><select id="storage-type" aria-label="Storage type"><option value="localStorage">Local storage</option><option value="sessionStorage">Session storage</option></select><button id="refresh-storage">Refresh</button></div><div id="storage-output" class="rows"></div></div>
+   <div class="panel" id="console-panel" role="tabpanel"><div class="toolbar"><select id="level" aria-label="Log level"><option value="">All levels</option><option>log</option><option>info</option><option>warn</option><option>error</option><option>debug</option><option>result</option></select><input id="log-search" placeholder="Filter logs" aria-label="Filter console logs"><button id="clear">Clear view</button></div><div id="logs" class="rows" role="log" aria-label="Console output"></div><form id="repl"><label for="expression">❯</label><select id="eval-mode" aria-label="Evaluation mode"><option value="script">JS</option><option value="await">Await</option></select><input id="expression" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="JavaScript in this page" aria-label="JavaScript expression"><button>Run</button></form></div>
+   <div class="panel" id="network-panel" role="tabpanel" hidden><div class="toolbar"><input id="network-search" aria-label="Filter requests" placeholder="Filter requests"><span>Metadata only</span><button id="clear-network">Clear view</button></div><div class="rows" id="requests"></div></div>
+   <div class="panel" id="elements-panel" role="tabpanel" hidden><form id="selector-form" class="toolbar"><input id="selector" value="body" aria-label="CSS selector"><button>Inspect</button><button type="button" id="highlight">Highlight</button><button type="button" id="pick">Pick</button></form><div class="rows"><p id="element-summary"></p><pre id="element-metadata"></pre><pre id="element-output"></pre></div></div>
+   <div class="panel" id="storage-panel" role="tabpanel" hidden><div class="toolbar"><select id="storage-type" aria-label="Storage type"><option value="localStorage">Local storage</option><option value="sessionStorage">Session storage</option></select><button id="refresh-storage">Refresh</button></div><form id="storage-form" class="storage-editor"><input id="storage-key" placeholder="Key" aria-label="Storage key" required><input id="storage-value" placeholder="Value" aria-label="Storage value"><button>Save value</button></form><p id="storage-status" role="status"></p><div id="storage-output" class="rows"></div></div>
    <div class="panel" id="info-panel" role="tabpanel" hidden><div class="rows"><h2>Current page</h2><pre id="page-info"></pre><p>This console runs inside this page. It shares the page’s JavaScript thread and cannot stay responsive during a page stall. Use the independent Elyon broker for durable browser evidence.</p><p>Gecko and native iOS bridges are research work, not enabled capabilities.</p></div></div>
    <div class="panel" id="settings-panel" role="tabpanel" hidden><div class="rows settings"><div class="section-title">APPEARANCE <span>20 ORIGINAL PALETTES</span></div><div id="themes" class="themes" aria-label="Color themes"></div><div id="settings-controls"></div><button id="reset">Restore Elyon defaults</button><p id="save-state" role="status">Preferences are stored on this origin.</p><p>Only Elyon preferences are reset. Page storage and recorded broker evidence are never cleared here.</p></div></div>
    <footer><span id="session-state">PAGE INSTRUMENTATION</span><span id="row-count">0 logs</span></footer>
@@ -61,47 +121,40 @@ export function createConsole() {
   document.documentElement.append(host);
   const $ = (q) => root.querySelector(q);
   const $$ = (q) => [...root.querySelectorAll(q)];
+  let serial = 0,
+    logsDropped = 0,
+    requestsDropped = 0;
+  const newId = () => `page-${++serial}`;
   let logs = [],
     requests = [],
     tab = "console",
     destroyed = false,
     selected = null,
     renderPending = false;
-  const cleanups = [];
+  let frame = null,
+    picking = false;
+  const objectURLs = new Set();
+  const cleanups = [
+    () => {
+      style.onload = null;
+      style.onerror = null;
+    },
+  ];
   const timers = new Set();
-  const originalConsole = new Map();
-  function preview(value) {
-    try {
-      if (typeof value === "string") return value.slice(0, 10000);
-      if (value instanceof Error)
-        return `${value.name}: ${value.message}\n${value.stack || ""}`.slice(
-          0,
-          10000,
-        );
-      if (typeof value === "object" && value !== null) {
-        const descriptors = Object.getOwnPropertyDescriptors(value);
-        return (
-          (Array.isArray(value) ? "[" : "{") +
-          Object.entries(descriptors)
-            .slice(0, 25)
-            .map(
-              ([k, d]) =>
-                `${k}: ${"value" in d ? (typeof d.value === "object" && d.value !== null ? "[object]" : String(d.value).slice(0, 500)) : "[getter not invoked]"}`,
-            )
-            .join(", ") +
-          (Array.isArray(value) ? "]" : "}")
-        );
-      }
-      return String(value).slice(0, 10000);
-    } catch {
-      return "[Uninspectable value]";
-    }
-  }
+
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(settings));
+      capability("preferences", {
+        status: "available",
+        reason: "saved-on-origin",
+      });
       $("#save-state").textContent = "Preferences saved on this origin.";
     } catch {
+      capability("preferences", {
+        status: "denied",
+        reason: "storage-write-failed",
+      });
       $("#save-state").textContent =
         "Storage unavailable; preferences last for this session.";
     }
@@ -130,15 +183,23 @@ export function createConsole() {
     $("#expression").placeholder = settings.jsExecution
       ? "JavaScript in this page"
       : "JavaScript execution disabled in Settings";
+    logsDropped += Math.max(0, logs.length - settings.maxRows);
     logs = logs.slice(-settings.maxRows);
+    requestsDropped += Math.max(0, requests.length - settings.maxRows);
     requests = requests.slice(-settings.maxRows);
+    layout();
     schedule();
   }
   function open() {
+    if (destroyed) return;
+    stopPicking();
+    layout();
     $(".console").hidden = false;
     $(".launcher").hidden = true;
+    schedule();
   }
   function close() {
+    if (destroyed) return;
     $(".console").hidden = true;
     $(".launcher").hidden = false;
   }
@@ -158,19 +219,20 @@ export function createConsole() {
   function schedule() {
     if (renderPending || destroyed) return;
     renderPending = true;
-    requestAnimationFrame(() => {
+    frame = requestAnimationFrame(() => {
       renderPending = false;
-      if (!destroyed) render();
+      if (!destroyed && !$(".console").hidden) render();
     });
   }
   function add(level, args) {
     if (destroyed) return;
     logs.push({
-      id: crypto.randomUUID?.() || String(Math.random()),
+      id: newId(),
       time: Date.now(),
       level,
-      text: args.map(preview).join(" "),
+      text: args.map((value) => preview(value)).join(" "),
     });
+    logsDropped += Math.max(0, logs.length - settings.maxRows);
     logs = logs.slice(-settings.maxRows);
     if (level === "error" && settings.autoOpenError) {
       open();
@@ -178,54 +240,84 @@ export function createConsole() {
     }
     schedule();
   }
+  const requestElements = new Map();
   function render() {
-    const q = $("#log-search").value.toLowerCase(),
-      level = $("#level").value;
-    const rows = logs.filter(
-      (l) => (!level || l.level === level) && l.text.toLowerCase().includes(q),
-    );
-    $("#logs").replaceChildren();
-    for (const l of rows.slice(-250)) {
-      const row = document.createElement("div");
-      row.className = `row level-${l.level}`;
-      if (settings.timestamps) {
-        const time = document.createElement("time");
-        time.textContent = new Date(l.time).toLocaleTimeString();
-        row.append(time);
+    if (tab === "console") {
+      const logScroll = $("#logs").scrollTop;
+      const q = $("#log-search").value.toLowerCase(),
+        level = $("#level").value;
+      const rows = logs.filter(
+        (l) =>
+          (!level || l.level === level) && l.text.toLowerCase().includes(q),
+      );
+      $("#logs").replaceChildren();
+      for (const l of rows.slice(-250)) {
+        const row = document.createElement("div");
+        row.className = `row level-${l.level}`;
+        if (settings.timestamps) {
+          const time = document.createElement("time");
+          time.textContent = new Date(l.time).toLocaleTimeString();
+          row.append(time);
+        }
+        const badge = document.createElement("span");
+        badge.className = "level";
+        badge.textContent = l.level;
+        const text = document.createElement("pre");
+        text.textContent = l.text;
+        row.append(badge, text);
+        $("#logs").append(row);
       }
-      const badge = document.createElement("span");
-      badge.className = "level";
-      badge.textContent = l.level;
-      const text = document.createElement("pre");
-      text.textContent = l.text;
-      row.append(badge, text);
-      $("#logs").append(row);
+      if (!rows.length) {
+        const p = document.createElement("p");
+        p.className = "empty";
+        p.textContent =
+          "No matching logs. Use the page or run a JavaScript expression.";
+        $("#logs").append(p);
+      }
+      if (settings.autoScroll && tab === "console")
+        $("#logs").scrollTop = $("#logs").scrollHeight;
+      else $("#logs").scrollTop = logScroll;
     }
-    if (!rows.length) {
-      const p = document.createElement("p");
-      p.className = "empty";
-      p.textContent =
-        "No matching logs. Use the page or run a JavaScript expression.";
-      $("#logs").append(p);
+    if (tab === "network") {
+      if (!requestElements.size) $("#requests").replaceChildren();
+      const networkQuery = $("#network-search").value.toLowerCase();
+      const visibleRequests = requests
+        .filter((n) => JSON.stringify(n).toLowerCase().includes(networkQuery))
+        .slice(-250);
+      const visibleIDs = new Set(visibleRequests.map((n) => n.id));
+      for (const [id, el] of requestElements)
+        if (!visibleIDs.has(id)) {
+          el.remove();
+          requestElements.delete(id);
+        }
+      for (const n of visibleRequests) {
+        const row =
+          requestElements.get(n.id) || document.createElement("details");
+        const wasOpen = row.open;
+        row.replaceChildren();
+        row.className = "request";
+        const summary = document.createElement("summary");
+        summary.textContent = `${n.method ?? "?"}  ${n.status ?? "—"}  ${n.outcome}  ${n.duration === null ? "…" : n.duration.toFixed(1) + " ms"}  ${n.url ?? "URL unavailable"}`;
+        const pre = document.createElement("pre");
+        const { monotonicStart, ...details } = n;
+        pre.textContent = JSON.stringify(details, null, 2);
+        row.append(summary, pre);
+        row.open = wasOpen;
+        if (!requestElements.has(n.id)) {
+          requestElements.set(n.id, row);
+          $("#requests").append(row);
+        }
+      }
+      if (!requests.length)
+        $("#requests").textContent =
+          "No requests captured yet. Fetch a response from the playground.";
     }
-    $("#requests").replaceChildren();
-    for (const n of requests.slice(-250)) {
-      const row = document.createElement("details");
-      row.className = "request";
-      const summary = document.createElement("summary");
-      summary.textContent = `${n.method}  ${n.status ?? "pending"}  ${n.duration === null ? "…" : n.duration.toFixed(1) + " ms"}  ${n.url}`;
-      const pre = document.createElement("pre");
-      pre.textContent = JSON.stringify(n, null, 2);
-      row.append(summary, pre);
-      $("#requests").append(row);
-    }
-    if (!requests.length)
-      $("#requests").textContent =
-        "No requests captured yet. Fetch a response from the playground.";
+    $("#session-state").textContent =
+      logsDropped + requestsDropped
+        ? `PAGE · ${logsDropped + requestsDropped} older rows evicted`
+        : "PAGE INSTRUMENTATION";
     $("#row-count").textContent =
       `${logs.length} logs · ${requests.length} requests · view ≤250`;
-    if (settings.autoScroll && tab === "console")
-      $("#logs").scrollTop = $("#logs").scrollHeight;
   }
   for (const level of [
     "log",
@@ -238,26 +330,37 @@ export function createConsole() {
     "trace",
     "assert",
   ]) {
-    const original = console[level];
-    if (typeof original !== "function") continue;
-    const wrapped = function (...args) {
-      Reflect.apply(original, console, args);
-      if (destroyed || !settings.console) return;
-      if (level === "assert") {
-        if (!args[0]) add("error", args.slice(1));
-        return;
-      }
-      add(level, args);
-    };
-    originalConsole.set(level, { original, wrapped });
-    console[level] = wrapped;
+    const hook = replaceMethod(
+      console,
+      level,
+      (original) =>
+        function (...args) {
+          const result = Reflect.apply(original, this, args);
+          if (!destroyed && settings.console)
+            try {
+              if (level === "assert") {
+                if (!args[0]) add("error", args.slice(1));
+              } else add(level, args);
+            } catch {
+              /* Observation must not replace the native result or exception. */
+            }
+          return result;
+        },
+    );
+    capability(`console.${level}`, hook);
+    cleanups.push(hook.restore);
   }
   const errorListener = (e) => {
-    if (settings.errors)
-      add("error", [e.error || e.message || "Resource load error"]);
+    if (settings.errors && !destroyed)
+      try {
+        add("error", [e.error || e.message || "Resource load error"]);
+      } catch {}
   };
   const rejectionListener = (e) => {
-    if (settings.errors) add("error", ["Unhandled rejection:", e.reason]);
+    if (settings.errors && !destroyed)
+      try {
+        add("error", ["Unhandled rejection:", e.reason]);
+      } catch {}
   };
   window.addEventListener("error", errorListener);
   window.addEventListener("unhandledrejection", rejectionListener);
@@ -268,141 +371,240 @@ export function createConsole() {
   function begin(method, url, kind) {
     if (destroyed || !settings.network) return null;
     const row = {
-      id: crypto.randomUUID?.() || String(Math.random()),
+      id: newId(),
       kind,
-      method: String(method).slice(0, 32),
-      url: String(url).slice(0, 4000),
+      method: typeof method === "string" ? method.slice(0, 32) : null,
+      url: typeof url === "string" ? url.slice(0, 4000) : null,
       status: null,
       duration: null,
       started: Date.now(),
     };
     requests.push(row);
+    requestsDropped += Math.max(0, requests.length - settings.maxRows);
     requests = requests.slice(-settings.maxRows);
     schedule();
     return row;
   }
-  function finish(row, status, error) {
-    if (!row || destroyed) return;
-    row.status = status;
-    row.duration = Date.now() - row.started;
-    if (error) row.error = preview(error);
-    schedule();
-  }
-  const originalFetch = window.fetch;
-  const wrappedFetch = function (...args) {
-    let row = null;
+  const network = installNetwork({
+    enabled: () => settings.network,
+    begin,
+    change: schedule,
+    capability,
+  });
+  cleanups.push(() => network.stop());
+  function inspectElement(element) {
+    selected = element;
+    if (!selected) {
+      $("#element-summary").textContent = "No matching element";
+      $("#element-output").textContent = "";
+      $("#element-metadata").textContent = "";
+      return;
+    }
     try {
-      const [input, init] = args;
-      row = begin(
-        init?.method || (input instanceof Request ? input.method : "GET"),
-        input instanceof Request ? input.url : String(input),
-        "fetch",
+      const rect = selected.getBoundingClientRect(),
+        css = getComputedStyle(selected);
+      $("#element-summary").textContent =
+        `${selected.tagName.toLowerCase()} · ${selected.childElementCount} child elements`;
+      $("#element-metadata").textContent = JSON.stringify(
+        {
+          source: "page-dom",
+          connected: selected.isConnected,
+          tag: selected.tagName.toLowerCase(),
+          id: selected.id,
+          classes: [...selected.classList],
+          attributes: [...selected.attributes]
+            .slice(0, 40)
+            .map((a) => ({ name: a.name, value: a.value.slice(0, 500) })),
+          rect: {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          },
+          computed: {
+            display: css.display,
+            visibility: css.visibility,
+            position: css.position,
+            color: css.color,
+            fontSize: css.fontSize,
+          },
+          text: selected.textContent.slice(0, 2000),
+        },
+        null,
+        2,
       );
-    } catch {}
-    let result;
-    try {
-      result = Reflect.apply(originalFetch, this, args);
+      const html = selected.outerHTML;
+      $("#element-output").textContent =
+        html.slice(0, 30000) +
+        (html.length > 30000 ? "\n[HTML truncated at 30000 characters]" : "");
     } catch (error) {
-      finish(row, "failed", error);
-      throw error;
-    }
-    return result.then(
-      (response) => {
-        finish(row, response.status);
-        return response;
-      },
-      (error) => {
-        finish(row, "failed", error);
-        throw error;
-      },
-    );
-  };
-  if (originalFetch) window.fetch = wrappedFetch;
-  cleanups.push(() => {
-    if (window.fetch === wrappedFetch) window.fetch = originalFetch;
-  });
-  const xhrOpen = XMLHttpRequest.prototype.open,
-    xhrSend = XMLHttpRequest.prototype.send,
-    xhrMeta = new WeakMap();
-  function openXHR(method, url, ...rest) {
-    const result = Reflect.apply(xhrOpen, this, [method, url, ...rest]);
-    xhrMeta.set(this, { method, url });
-    return result;
-  }
-  function sendXHR(...args) {
-    const meta = xhrMeta.get(this);
-    let row = null;
-    try {
-      if (meta) row = begin(meta.method, meta.url, "xhr");
-    } catch {}
-    this.addEventListener("loadend", () => finish(row, this.status), {
-      once: true,
-    });
-    try {
-      return Reflect.apply(xhrSend, this, args);
-    } catch (error) {
-      finish(row, "failed", error);
-      throw error;
+      selected = null;
+      $("#element-summary").textContent = preview(error);
     }
   }
-  XMLHttpRequest.prototype.open = openXHR;
-  XMLHttpRequest.prototype.send = sendXHR;
-  cleanups.push(() => {
-    if (XMLHttpRequest.prototype.open === openXHR)
-      XMLHttpRequest.prototype.open = xhrOpen;
-    if (XMLHttpRequest.prototype.send === sendXHR)
-      XMLHttpRequest.prototype.send = xhrSend;
-  });
   function inspect() {
+    selected = null;
     try {
-      selected = document.querySelector($("#selector").value);
-      $("#element-summary").textContent = selected
-        ? `${selected.tagName.toLowerCase()} · ${selected.childElementCount} child elements`
-        : "No matching element";
-      $("#element-output").textContent = selected
-        ? selected.outerHTML.slice(0, 30000)
-        : "";
+      inspectElement(document.querySelector($("#selector").value));
     } catch (error) {
       $("#element-summary").textContent = preview(error);
       $("#element-output").textContent = "";
+      $("#element-metadata").textContent = "";
     }
   }
+  let highlightCleanup = () => {};
+  function highlight() {
+    highlightCleanup();
+    if (!selected?.isConnected) {
+      $("#element-summary").textContent =
+        "Selected element is no longer connected.";
+      return;
+    }
+    const mark = document.createElement("div");
+    mark.className = "element-highlight";
+    root.append(mark);
+    const update = () => {
+      if (!selected?.isConnected) {
+        highlightCleanup();
+        return;
+      }
+      const r = selected.getBoundingClientRect();
+      mark.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+    };
+    const timer = setTimeout(() => highlightCleanup(), 1800);
+    timers.add(timer);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    highlightCleanup = () => {
+      clearTimeout(timer);
+      timers.delete(timer);
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+      mark.remove();
+    };
+    update();
+  }
+  cleanups.push(() => highlightCleanup());
+  function stopPicking() {
+    picking = false;
+    document.removeEventListener("pointerdown", pickElement, true);
+    document.removeEventListener("keydown", cancelPick, true);
+    $(".launcher").textContent = "E_";
+  }
+  function cancelPick(e) {
+    if (e.key === "Escape") {
+      stopPicking();
+      open();
+    }
+  }
+  function pickElement(e) {
+    if (e.composedPath().includes(host)) return;
+    if (!(e.target instanceof Element)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const element = e.target;
+    stopPicking();
+    open();
+    activate("elements");
+    $("#selector").value = "";
+    inspectElement(element);
+    highlight();
+  }
+  $("#pick").onclick = () => {
+    picking = true;
+    close();
+    $(".launcher").textContent = "Cancel";
+    document.addEventListener("pointerdown", pickElement, true);
+    document.addEventListener("keydown", cancelPick, true);
+  };
+  cleanups.push(stopPicking);
   function storage() {
     const out = $("#storage-output");
     out.replaceChildren();
+    const name = $("#storage-type").value;
     try {
-      const store = window[$("#storage-type").value];
-      for (let i = 0; i < store.length; i++) {
-        const key = store.key(i);
-        const row = document.createElement("div");
+      const store = window[name];
+      capability(name, { status: "available", reason: "read-access" });
+      for (let i = 0; i < Math.min(store.length, 250); i++) {
+        const key = store.key(i),
+          row = document.createElement("div");
         row.className = "storage-row";
         const title = document.createElement("b");
         title.textContent = key;
         const value = document.createElement("pre");
-        value.textContent = store.getItem(key)?.slice(0, 10000);
-        row.append(title, value);
+        const stored = store.getItem(key);
+        value.textContent =
+          stored?.slice(0, 10000) +
+          (stored?.length > 10000
+            ? "\n[value truncated at 10000 characters]"
+            : "");
+        const edit = document.createElement("button");
+        edit.textContent = "Edit";
+        edit.setAttribute("aria-label", `Edit ${key}`);
+        edit.onclick = () => {
+          $("#storage-key").value = key;
+          $("#storage-value").value = store.getItem(key) || "";
+        };
+        const remove = document.createElement("button");
+        remove.textContent = "Delete";
+        remove.setAttribute("aria-label", `Delete ${key}`);
+        remove.onclick = () => {
+          if (window.confirm("Delete this one storage key?"))
+            try {
+              store.removeItem(key);
+              $("#storage-status").textContent = "Value deleted.";
+              storage();
+            } catch (error) {
+              $("#storage-status").textContent = preview(error);
+            }
+        };
+        row.append(title, value, edit, remove);
         out.append(row);
       }
       if (!store.length) out.textContent = "No stored values on this origin.";
+      if (store.length > 250)
+        out.prepend(
+          document.createTextNode(
+            "Showing first 250 keys. Values are truncated at 10000 characters.",
+          ),
+        );
     } catch (error) {
+      capability(name, { status: "denied", reason: "storage-read-failed" });
       out.textContent = "Storage unavailable: " + preview(error);
     }
   }
+  $("#storage-form").onsubmit = (e) => {
+    e.preventDefault();
+    try {
+      window[$("#storage-type").value].setItem(
+        $("#storage-key").value,
+        $("#storage-value").value,
+      );
+      $("#storage-status").textContent = "Value saved.";
+      storage();
+    } catch (error) {
+      $("#storage-status").textContent =
+        "Storage write failed: " + preview(error);
+    }
+  };
   function info() {
     $("#page-info").textContent = JSON.stringify(
       {
         url: location.href,
         userAgent: navigator.userAgent,
-        viewport: {
-          width: innerWidth,
-          height: innerHeight,
-          dpr: devicePixelRatio,
-        },
+        viewport: viewport(),
         online: navigator.onLine,
         secureContext: isSecureContext,
         timeOrigin: performance.timeOrigin,
         source: "page-instrumentation",
         nativeBridge: false,
+        enabled: {
+          network: settings.network,
+          console: settings.console,
+          errors: settings.errors,
+          evaluation: settings.jsExecution,
+        },
+        capabilities,
       },
       null,
       2,
@@ -515,6 +717,7 @@ export function createConsole() {
     schedule();
   };
   $("#log-search").oninput = schedule;
+  $("#network-search").oninput = schedule;
   $("#level").onchange = schedule;
   $("#repl").onsubmit = async (e) => {
     e.preventDefault();
@@ -524,9 +727,25 @@ export function createConsole() {
     $("#expression").value = "";
     add("input", [source]);
     try {
-      const result = await (0, eval)(source);
+      const result =
+        $("#eval-mode").value === "await"
+          ? await new (Object.getPrototypeOf(async function () {}).constructor)(
+              `return (${source}\n)`,
+            )()
+          : await (0, eval)(source);
+      capability("evaluation", {
+        status: "available",
+        reason: "page-execution",
+      });
       if (!destroyed) add("result", [result]);
     } catch (error) {
+      capability("evaluation", {
+        status: error instanceof EvalError ? "denied" : "available",
+        reason:
+          error instanceof EvalError
+            ? "eval-blocked-by-page-policy"
+            : "evaluation-error",
+      });
       if (!destroyed) add("error", [error]);
     }
   };
@@ -534,48 +753,22 @@ export function createConsole() {
     e.preventDefault();
     inspect();
   };
-  $("#highlight").onclick = () => {
-    if (!selected) return;
-    const rect = selected.getBoundingClientRect(),
-      mark = document.createElement("div");
-    mark.className = "element-highlight";
-    mark.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
-    root.append(mark);
-    const timer = setTimeout(() => {
-      mark.remove();
-      timers.delete(timer);
-    }, 1500);
-    timers.add(timer);
-  };
+  $("#highlight").onclick = highlight;
   $("#storage-type").onchange = storage;
   $("#refresh-storage").onclick = storage;
   $("#export").onclick = () => {
-    const data = {
-      version: 1,
-      source: "elyon-page-console",
-      redacted: true,
-      logs: logs.map(({ time, level }) => ({
-        time,
-        level,
-        text: "[redacted]",
-      })),
-      requests: requests.map(({ kind, method, status, duration }) => ({
-        kind,
-        method,
-        status,
-        duration,
-        url: "[redacted]",
-      })),
-    };
+    const data = snapshot();
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
     );
     const a = document.createElement("a");
+    objectURLs.add(url);
     a.href = url;
     a.download = "elyon-page-session-redacted.json";
     a.click();
     const timer = setTimeout(() => {
       URL.revokeObjectURL(url);
+      objectURLs.delete(url);
       timers.delete(timer);
     }, 1000);
     timers.add(timer);
@@ -585,7 +778,237 @@ export function createConsole() {
     apply();
     save();
   };
+  function viewport() {
+    const v = window.visualViewport;
+    return {
+      width: v?.width || innerWidth,
+      height: v?.height || innerHeight,
+      left: v?.offsetLeft || 0,
+      top: v?.offsetTop || 0,
+    };
+  }
+  function layout() {
+    if (destroyed) return;
+    const v = viewport();
+    shell.classList.toggle("keyboard-compact", v.height < 320);
+    shell.classList.toggle(
+      "keyboard-tiny",
+      v.height < 190 && root.activeElement === $("#expression"),
+    );
+    const height = Math.min(
+      v.height,
+      Math.max(200, (innerHeight * settings.height) / 100),
+    );
+    shell.style.setProperty("--panel-height", height + "px");
+    shell.style.setProperty(
+      "--panel-top",
+      v.top + Math.max(0, v.height - height) * settings.panelY + "px",
+    );
+    shell.style.setProperty("--viewport-left", v.left + "px");
+    shell.style.setProperty("--viewport-width", v.width + "px");
+    $(".launcher").style.left =
+      v.left + Math.max(0, v.width - 48) * settings.launcherX + "px";
+    $(".launcher").style.top =
+      v.top + Math.max(0, v.height - 48) * settings.launcherY + "px";
+    if (tab === "info") info();
+  }
+  function draggable(element, mode) {
+    let drag = null,
+      moved = false;
+    const down = (e) => {
+      if (e.button !== 0) return;
+      const v = viewport(),
+        r = $(".console").getBoundingClientRect();
+      drag = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        height: r.height,
+        top: r.top,
+        launcher: $(".launcher").getBoundingClientRect(),
+        v,
+      };
+      moved = false;
+      element.setPointerCapture(e.pointerId);
+    };
+    const move = (e) => {
+      if (!drag || drag.id !== e.pointerId) return;
+      const dx = e.clientX - drag.x,
+        dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) < 4 && !moved) return;
+      moved = true;
+      e.preventDefault();
+      const v = viewport();
+      if (mode === "launcher") {
+        settings.launcherX = Math.max(
+          0,
+          Math.min(
+            1,
+            (drag.launcher.left + dx - v.left) / Math.max(1, v.width - 48),
+          ),
+        );
+        settings.launcherY = Math.max(
+          0,
+          Math.min(
+            1,
+            (drag.launcher.top + dy - v.top) / Math.max(1, v.height - 48),
+          ),
+        );
+      } else if (mode === "move") {
+        settings.panelY = Math.max(
+          0,
+          Math.min(
+            1,
+            (drag.top + dy - v.top) / Math.max(1, v.height - drag.height),
+          ),
+        );
+      } else {
+        settings.height = Math.max(
+          30,
+          Math.min(100, ((drag.height - dy) / innerHeight) * 100),
+        );
+      }
+      layout();
+    };
+    const up = (e) => {
+      if (!drag || drag.id !== e.pointerId) return;
+      drag = null;
+      if (moved) save();
+    };
+    const click = (e) => {
+      if (moved) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        moved = false;
+      }
+    };
+    element.addEventListener("pointerdown", down);
+    element.addEventListener("pointermove", move);
+    element.addEventListener("pointerup", up);
+    element.addEventListener("pointercancel", up);
+    element.addEventListener("click", click, true);
+    cleanups.push(() => {
+      if (drag && element.hasPointerCapture(drag.id))
+        element.releasePointerCapture(drag.id);
+      drag = null;
+      element.removeEventListener("pointerdown", down);
+      element.removeEventListener("pointermove", move);
+      element.removeEventListener("pointerup", up);
+      element.removeEventListener("pointercancel", up);
+      element.removeEventListener("click", click, true);
+    });
+  }
+  draggable($(".launcher"), "launcher");
+  draggable($("#move-handle"), "move");
+  draggable($("#size-handle"), "resize");
+  $("#move-handle").onkeydown = (e) => {
+    if (["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) {
+      e.preventDefault();
+      settings.panelY =
+        e.key === "Home"
+          ? 0
+          : e.key === "End"
+            ? 1
+            : Math.max(
+                0,
+                Math.min(
+                  1,
+                  settings.panelY + (e.key === "ArrowUp" ? -0.1 : 0.1),
+                ),
+              );
+      layout();
+      save();
+    }
+  };
+  $("#size-handle").onkeydown = (e) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      settings.height = Math.max(
+        30,
+        Math.min(100, settings.height + (e.key === "ArrowUp" ? 5 : -5)),
+      );
+      apply();
+      save();
+    }
+  };
+  shell.addEventListener("focusin", layout);
+  shell.addEventListener("focusout", layout);
+  window.addEventListener("resize", layout);
+  window.visualViewport?.addEventListener("resize", layout);
+  window.visualViewport?.addEventListener("scroll", layout);
+  cleanups.push(
+    () => window.removeEventListener("resize", layout),
+    () => window.visualViewport?.removeEventListener("resize", layout),
+    () => window.visualViewport?.removeEventListener("scroll", layout),
+  );
+  function snapshot({ redacted = true } = {}) {
+    const safeMethods = new Set([
+      "GET",
+      "HEAD",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+      "CONNECT",
+      "TRACE",
+    ]);
+    return JSON.parse(
+      JSON.stringify({
+        version: 2,
+        source: "elyon-page-console",
+        redacted,
+        independentEvidence: false,
+        installed: !destroyed,
+        enabled: {
+          console: settings.console,
+          errors: settings.errors,
+          network: settings.network,
+          evaluation: settings.jsExecution,
+        },
+        coverage: {
+          scope: "current-document",
+          complete: false,
+          settingsHistory: "not-recorded",
+        },
+        retention: {
+          policy: "volatile-drop-oldest",
+          maxRows: settings.maxRows,
+          visibleRows: 250,
+          logsDropped,
+          requestsDropped,
+        },
+        capabilities,
+        logs: logs.map((l) =>
+          redacted
+            ? { time: l.time, level: l.level, text: "[redacted]" }
+            : { ...l },
+        ),
+        requests: requests.map(({ monotonicStart, ...r }) =>
+          redacted
+            ? {
+                id: r.id,
+                kind: r.kind,
+                source: r.source,
+                method: safeMethods.has(r.method?.toUpperCase())
+                  ? r.method
+                  : "[redacted]",
+                status: r.status,
+                outcome: r.outcome,
+                duration: r.duration,
+                url: "[redacted]",
+                gap: r.gap,
+                eventsTruncated: Boolean(r.eventsTruncated),
+                events: r.events,
+              }
+            : r,
+        ),
+      }),
+    );
+  }
   const api = {
+    source: "elyon-page-console",
+    snapshot,
     open,
     close,
     showTab: (name) => {
@@ -604,16 +1027,58 @@ export function createConsole() {
       }
     },
     destroy() {
+      if (destroyed) return;
+      cleanups.forEach((fn) => {
+        try {
+          fn();
+        } catch {
+          capability("cleanup", {
+            status: "partial",
+            reason: "page-prevented-cleanup",
+          });
+        }
+      });
       destroyed = true;
-      for (const [level, { original, wrapped }] of originalConsole)
-        if (console[level] === wrapped) console[level] = original;
-      cleanups.forEach((fn) => fn());
+      if (frame !== null) cancelAnimationFrame(frame);
       timers.forEach(clearTimeout);
+      objectURLs.forEach((url) => URL.revokeObjectURL(url));
+      objectURLs.clear();
+      logs = [];
+      requests = [];
+      requestElements.clear();
+      selected = null;
+      for (const state of Object.values(capabilities))
+        if (state.status === "available") {
+          state.status = "stopped";
+          state.reason = "console-destroyed";
+        }
       host.remove();
-      if (window.elyonConsole === api) delete window.elyonConsole;
+      try {
+        if (window.elyonConsole === api) delete window.elyonConsole;
+      } catch {
+        capability("globalAPI", {
+          status: "denied",
+          reason: "protected-global",
+        });
+      }
+      try {
+        if (window[REGISTRY] === api) delete window[REGISTRY];
+      } catch {
+        capability("globalAPI", {
+          status: "denied",
+          reason: "protected-registry",
+        });
+      }
+      instance = null;
     },
   };
-  window.elyonConsole = api;
+  instance = api;
+  try {
+    window[REGISTRY] = api;
+    window.elyonConsole = api;
+  } catch {
+    capability("globalAPI", { status: "denied", reason: "protected-global" });
+  }
   apply();
   activate("console");
   add("info", [

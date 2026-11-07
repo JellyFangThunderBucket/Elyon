@@ -1,1 +1,25 @@
-{"name":"elyon-workbench","version":"0.3.0","private":true,"scripts":{"start":"python3 -m elyon.workbench","chii":"chii start -h 127.0.0.1 -p 8090","check:themes":"node tools/check_themes.mjs","format:check":"prettier --check \"elyon/web/*.{js,css,html}\" tools/check_themes.mjs"},"dependencies":{"chii":"1.15.5"},"overrides":{"uuid":"11.1.1","qs":"6.17.1"},"devDependencies":{"prettier":"3.8.1"},"type":"module"}
+{
+  "name": "elyon-workbench",
+  "version": "0.4.0",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m elyon.workbench",
+    "chii": "chii start -h 127.0.0.1 -p 8090",
+    "check:themes": "node tools/check_themes.mjs",
+    "format:check": "prettier --check \"elyon/web/*.{js,css,html}\" \"tools/*.mjs\"",
+    "build:demo": "node tools/build-demo.mjs",
+    "preview:demo": "node tools/serve-demo.mjs",
+    "test:browser": "python3 tools/run_browser_checks.py"
+  },
+  "dependencies": {
+    "chii": "1.15.5"
+  },
+  "overrides": {
+    "uuid": "11.1.1",
+    "qs": "6.17.1"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1"
+  },
+  "type": "module"
+}

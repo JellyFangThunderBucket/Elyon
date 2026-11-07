@@ -87,6 +87,8 @@ def main() -> None:
                 "/mobile-console.js",
                 "/mobile-console.css",
                 "/settings.js",
+                "/network.js",
+                "/page-runtime.js",
             }:
                 name, mime = {
                     "/": ("index.html", "text/html"),
@@ -95,6 +97,8 @@ def main() -> None:
                     "/demo": ("demo.html", "text/html"),
                     "/themes.js": ("themes.js", "text/javascript"),
                     "/settings.js": ("settings.js", "text/javascript"),
+                    "/network.js": ("network.js", "text/javascript"),
+                    "/page-runtime.js": ("page-runtime.js", "text/javascript"),
                     "/mobile-console.js": ("mobile-console.js", "text/javascript"),
                     "/mobile-console.css": ("mobile-console.css", "text/css"),
                 }[path]
@@ -136,7 +140,11 @@ def main() -> None:
                         stdout=log,
                         stderr=log,
                     )
-                self.reply(b'{"started":true}', "application/json", 202)
+                self.reply(
+                    json.dumps({"started": True, "run": current.name}).encode(),
+                    "application/json",
+                    202,
+                )
 
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"Elyon workbench: http://127.0.0.1:{args.port}", flush=True)
