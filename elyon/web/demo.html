@@ -1,3 +1,87 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Elyon playground</title><link rel="stylesheet" href="/style.css"><body><section style="max-width:780px;margin:auto"><div class="eyebrow">ELYON × CHII / PLAYGROUND</div><h1>A page worth inspecting.</h1><p>Connect this page to your local Chii server, then inspect its elements, console messages, and requests.</p><article class="panel instructions"><label for="server">Chii server URL</label><input id="server" type="url"><p id="connection">Not connected</p><button id="connect" class="primary">Connect Chii</button><p>Connecting loads Chii’s instrumentation into this playground.</p></article><article class="panel instructions"><h2>Make something happen</h2><button id="counter">Count: 0</button> <button id="request">Fetch a response</button><pre id="output">Waiting for an action…</pre></article><a href="/">← Return to Elyon</a></section><script>
-let count=0;document.querySelector('#server').value=`http://${location.hostname}:8090`;document.querySelector('#counter').onclick=e=>{e.target.textContent=`Count: ${++count}`;console.log('Elyon counter',{count});document.querySelector('#output').textContent=`Counter updated to ${count}`};document.querySelector('#request').onclick=async()=>{const r=await fetch('/api/state');const data=await r.json();console.log('Elyon playground fetch',r.status,data);document.querySelector('#output').textContent=JSON.stringify(data,null,2)};document.querySelector('#connect').onclick=()=>{try{const url=new URL(document.querySelector('#server').value);if(!['http:','https:'].includes(url.protocol))throw Error('Use HTTP or HTTPS');const script=document.createElement('script');script.src=url.href.replace(/\/$/,'')+'/target.js';script.onload=()=>{document.querySelector('#connection').textContent='Chii script loaded. Open the inspector to check target connectivity.';console.log('Hello from Elyon playground')};script.onerror=()=>{document.querySelector('#connection').textContent='Could not load Chii. Check the server URL and run npm run chii.';document.querySelector('#connect').disabled=false};document.querySelector('#connect').disabled=true;document.head.append(script)}catch(e){document.querySelector('#connection').textContent=e.message}};
-</script></body></html>
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Elyon playground</title
+  ><link rel="stylesheet" href="/style.css" />
+  <body>
+    <section style="max-width: 780px; margin: auto">
+      <div class="eyebrow">ELYON × CHII / PLAYGROUND</div>
+      <h1>Your page. Your console.</h1>
+      <button id="open-mobile" class="primary">Open Elyon console</button>
+      <p>
+        Tap Settings in the console for 20 original themes. All tools operate on
+        this playground page.
+      </p>
+      <p>
+        Connect this page to your local Chii server, then inspect its elements,
+        console messages, and requests.
+      </p>
+      <article class="panel instructions">
+        <label for="server">Chii server URL</label
+        ><input id="server" type="url" />
+        <p id="connection">Not connected</p>
+        <button id="connect" class="primary">Connect Chii</button>
+        <p>Connecting loads Chii’s instrumentation into this playground.</p>
+      </article>
+      <article class="panel instructions">
+        <h2>Make something happen</h2>
+        <button id="counter">Count: 0</button>
+        <button id="request">Fetch a response</button>
+        <pre id="output">Waiting for an action…</pre>
+      </article>
+      <a href="/">← Return to Elyon</a>
+    </section>
+    <script>
+      let count = 0;
+      document.querySelector("#server").value =
+        `http://${location.hostname}:8090`;
+      document.querySelector("#counter").onclick = (e) => {
+        e.target.textContent = `Count: ${++count}`;
+        console.log("Elyon counter", { count });
+        document.querySelector("#output").textContent =
+          `Counter updated to ${count}`;
+      };
+      document.querySelector("#request").onclick = async () => {
+        const r = await fetch("/api/state");
+        const data = await r.json();
+        console.log("Elyon playground fetch", r.status, data);
+        document.querySelector("#output").textContent = JSON.stringify(
+          data,
+          null,
+          2,
+        );
+      };
+      document.querySelector("#connect").onclick = () => {
+        try {
+          const url = new URL(document.querySelector("#server").value);
+          if (!["http:", "https:"].includes(url.protocol))
+            throw Error("Use HTTP or HTTPS");
+          const script = document.createElement("script");
+          script.src = url.href.replace(/\/$/, "") + "/target.js";
+          script.onload = () => {
+            document.querySelector("#connection").textContent =
+              "Chii script loaded. Open the inspector to check target connectivity.";
+            console.log("Hello from Elyon playground");
+          };
+          script.onerror = () => {
+            document.querySelector("#connection").textContent =
+              "Could not load Chii. Check the server URL and run npm run chii.";
+            document.querySelector("#connect").disabled = false;
+          };
+          document.querySelector("#connect").disabled = true;
+          document.head.append(script);
+        } catch (e) {
+          document.querySelector("#connection").textContent = e.message;
+        }
+      };
+    </script>
+    <script type="module">
+      import { createConsole } from "/mobile-console.js";
+      const mobile = createConsole();
+      document.querySelector("#open-mobile").onclick = () => mobile.open();
+      mobile.open();
+    </script>
+  </body>
+</html>

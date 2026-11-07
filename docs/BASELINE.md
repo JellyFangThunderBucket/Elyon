@@ -1,3 +1,6 @@
+> Historical recovered record. For current layout and validation, see
+> [the repository audit](REPOSITORY-AUDIT.md) and [current product direction](PRODUCT-DIRECTION.md).
+
 # Baseline and feasibility
 
 Inspection before source changes (2026-11-06, client date):

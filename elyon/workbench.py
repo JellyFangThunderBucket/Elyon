@@ -60,6 +60,8 @@ def main() -> None:
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            if mime in {"text/javascript", "text/css"}:
+                self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(data)
 
@@ -76,12 +78,25 @@ def main() -> None:
                     self.reply(b'{"error":"Run a capture first"}', "application/json", 409)
                 else:
                     self.reply((current / "evidence.json").read_bytes(), "application/json")
-            elif path in {"/", "/app.js", "/style.css", "/demo"}:
+            elif path in {
+                "/",
+                "/app.js",
+                "/style.css",
+                "/demo",
+                "/themes.js",
+                "/mobile-console.js",
+                "/mobile-console.css",
+                "/settings.js",
+            }:
                 name, mime = {
                     "/": ("index.html", "text/html"),
                     "/app.js": ("app.js", "text/javascript"),
                     "/style.css": ("style.css", "text/css"),
                     "/demo": ("demo.html", "text/html"),
+                    "/themes.js": ("themes.js", "text/javascript"),
+                    "/settings.js": ("settings.js", "text/javascript"),
+                    "/mobile-console.js": ("mobile-console.js", "text/javascript"),
+                    "/mobile-console.css": ("mobile-console.css", "text/css"),
                 }[path]
                 self.reply((WEB / name).read_bytes(), mime)
             else:

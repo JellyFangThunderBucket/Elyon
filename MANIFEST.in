@@ -4,3 +4,5 @@ recursive-include tests *.py
 recursive-include validation *.py
 recursive-include elyon/web *.html *.css *.js
 include package.json package-lock.json
+recursive-include tools *.py *.mjs
+recursive-include docs/images *.png

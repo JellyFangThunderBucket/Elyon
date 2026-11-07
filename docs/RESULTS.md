@@ -1,3 +1,6 @@
+> Historical recovered record. For current layout and validation, see
+> [the repository audit](REPOSITORY-AUDIT.md) and [current product direction](PRODUCT-DIRECTION.md).
+
 # Execution results
 
 Baseline: one README and initial commit `5e16f5f`; no implementation, previous

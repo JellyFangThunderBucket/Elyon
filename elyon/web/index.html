@@ -1,14 +1,259 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Elyon • Inspection workbench</title><link rel="stylesheet" href="/style.css"></head><body>
-<aside><a class="brand" href="/">E<span>LYON</span><sup>LAB</sup></a><p class="caption">DEVELOPER WORKSPACE</p><nav><button class="selected" data-view="evidence">◈ &nbsp; Evidence</button><button data-view="connect">⌁ &nbsp; Live inspection <small>CHII</small></button><button data-view="recovery">↺ &nbsp; Recovery notes</button></nav><div class="aside-bottom"><i></i> Local workspace<p>Evidence stays on this machine.</p><span>EL Y O N &nbsp; / &nbsp; 0.2</span></div></aside>
-<main><header><div>Workspace <span>/</span> <b id="breadcrumb">Evidence</b></div><span class="badge">DESKTOP PREVIEW</span></header>
-<section id="evidence" class="view"><div class="eyebrow">OBSERVE. UNDERSTAND. PRESERVE.</div><div class="heading"><div><h1>See what really happened.</h1><p>Request evidence that survives when your page doesn’t.</p></div><button id="run" class="primary">▶ &nbsp; Run browser capture</button></div>
-<div class="notice"><span>◉</span><div><b id="status">Ready for your first capture</b><p id="status-detail">Run a real Chromium session: redirects, a 5-second page stall, then a renderer crash.</p></div><span class="badge" id="run-label">NO CAPTURE</span></div>
-<div class="stats"><article><label>OBSERVATIONS</label><strong id="observations">0</strong><p>Immutable evidence nodes</p></article><article><label>RELATIONSHIPS</label><strong id="relations">0</strong><p>Explicit supporting evidence</p></article><article><label>CONTROL LATENCY</label><strong id="latency">—</strong><p>p95 during the page stall</p></article><article><label>EVIDENCE PRESERVED</label><strong id="preserved">—</strong><p>After renderer termination</p></article></div>
-<div class="panel"><div class="panel-head"><div><h2>Observation stream <span id="count">0</span></h2><p>Browser protocol observations · certainty stays explicit</p></div><div class="actions"><label class="file-button">Import archive<input id="import" type="file" accept=".json,application/json"></label><button id="export" disabled>↓ Export redacted</button></div></div><div class="toolbar"><input id="search" placeholder="Search URL, status, or event ID…" aria-label="Search observations"><select id="kind" aria-label="Filter event kind"><option value="">All observations</option><option>RequestAttempt</option><option>ResponseVersion</option><option>Redirect</option><option>Termination</option></select></div><div class="table-wrap"><table><thead><tr><th>TYPE / ID</th><th>RESOURCE</th><th>STATUS</th><th>CERTAINTY</th><th>TARGET</th></tr></thead><tbody id="rows"></tbody></table><div id="empty"><div>⌁</div><h3>Your evidence starts here</h3><p>Run a browser capture or open a recovered Elyon archive.<br>Every observation keeps its source and certainty.</p></div></div><div class="panel-footer"><span id="source">Awaiting browser observations</span><span>METADATA ONLY · NO RESPONSE BODIES</span></div></div>
-<details id="detail"><summary>Selected observation</summary><pre id="json">Select a row to inspect its full evidence.</pre></details><div class="footnote">This preview validates desktop Chromium. Native iOS, WebKit integration, and page-visible response provenance remain unverified.</div></section>
-<section id="connect" class="view" hidden><div class="eyebrow">POWERED BY LIRILIRI / CHII</div><h1>A live window into your page.</h1><p class="intro">Inspect DOM, console, and network activity through Chii’s DevTools interface.</p><div class="connect-grid"><article class="panel instructions"><span class="step">01</span><h2>Start the debugging server</h2><p>In the Elyon project folder, run:</p><pre>npm run chii</pre><p>The pinned Chii server listens on port 8090. Use it on a trusted local network; it has no authentication by default.</p><button id="open-chii" class="primary">Open Chii inspector ↗</button></article><article class="panel instructions"><span class="step">02</span><h2>Connect a page you control</h2><label for="chii-url">Chii server URL</label><input id="chii-url" type="url"><p>Add this script to your development page, then open that page on your phone.</p><pre id="snippet"></pre><button id="copy">Copy script</button><p>Use your computer’s reachable address on iPhone. HTTPS pages require an HTTPS / WSS Chii endpoint. CSP must permit the script and socket.</p></article></div><article class="panel instructions"><h2>Try the local playground</h2><p>A small page with a counter, console logging, and a fetch request. Its Chii script is loaded only when you choose to connect.</p><a class="button" href="/demo" target="_blank" rel="noopener">Open playground ↗</a></article><div class="footnote">Chii instruments JavaScript in the connected page. Its live inspector is separate from Elyon’s durable evidence broker. It cannot inspect arbitrary apps or bypass Safari restrictions.</div></section>
-<section id="recovery" class="view" hidden><div class="eyebrow">A FOUNDATION YOU CAN KEEP</div><h1>Recovered. Reconciled. Runnable.</h1><p class="intro">The recovered archive is preserved separately. This workspace builds on verified source, with the limits kept visible.</p><article class="panel instructions"><h2>What was recovered</h2><p>60 recorded edits across 24 file basenames: an authenticated evidence broker, append-only journal, provenance graph, browser harness, and tests. The original implementation had a command-line interface.</p><h2>What you can use now</h2><p>This workbench runs real browser captures, filters observations, opens local archives, and exports redacted evidence. Chii adds an opt-in live page inspector.</p><h2>What still needs device work</h2><p>Native iOS integration, Safari / WebKit validation, secure remote pairing, and a unified Chii-to-broker adapter. No native capability is claimed from desktop tests.</p><h2>Keep your work</h2><pre>git status
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Elyon • Inspection workbench</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="/">E<span>LYON</span><sup>LAB</sup></a>
+      <p class="caption">DEVELOPER WORKSPACE</p>
+      <nav>
+        <button class="selected" data-view="evidence">◈ &nbsp; Evidence</button
+        ><button data-view="connect">
+          ⌁ &nbsp; Live inspection <small>CHII</small></button
+        ><button data-view="settings">
+          ⚙ &nbsp; Settings <small>20</small></button
+        ><button data-view="recovery">↺ &nbsp; Recovery notes</button>
+      </nav>
+      <div class="aside-bottom">
+        <i></i> Local workspace
+        <p>Evidence stays on this machine.</p>
+        <span>EL Y O N &nbsp; / &nbsp; 0.2</span>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>Workspace <span>/</span> <b id="breadcrumb">Evidence</b></div>
+        <span class="badge">DESKTOP PREVIEW</span>
+      </header>
+      <section id="evidence" class="view">
+        <div class="eyebrow">OBSERVE. UNDERSTAND. PRESERVE.</div>
+        <a class="button mobile-entry" href="/demo">Open the page console ↗</a>
+        <div class="heading">
+          <div>
+            <h1>See what really happened.</h1>
+            <p>Request evidence that survives when your page doesn’t.</p>
+          </div>
+          <button id="run" class="primary">▶ &nbsp; Run browser capture</button>
+        </div>
+        <div class="notice">
+          <span>◉</span>
+          <div>
+            <b id="status">Ready for your first capture</b>
+            <p id="status-detail">
+              Run a real Chromium session: redirects, a 5-second page stall,
+              then a renderer crash.
+            </p>
+          </div>
+          <span class="badge" id="run-label">NO CAPTURE</span>
+        </div>
+        <div class="stats">
+          <article>
+            <label>OBSERVATIONS</label><strong id="observations">0</strong>
+            <p>Immutable evidence nodes</p>
+          </article>
+          <article>
+            <label>RELATIONSHIPS</label><strong id="relations">0</strong>
+            <p>Explicit supporting evidence</p>
+          </article>
+          <article>
+            <label>CONTROL LATENCY</label><strong id="latency">—</strong>
+            <p>p95 during the page stall</p>
+          </article>
+          <article>
+            <label>EVIDENCE PRESERVED</label><strong id="preserved">—</strong>
+            <p>After renderer termination</p>
+          </article>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Observation stream <span id="count">0</span></h2>
+              <p>Browser protocol observations · certainty stays explicit</p>
+            </div>
+            <div class="actions">
+              <label class="file-button"
+                >Import archive<input
+                  id="import"
+                  type="file"
+                  accept=".json,application/json" /></label
+              ><button id="export" disabled>↓ Export redacted</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <input
+              id="search"
+              placeholder="Search URL, status, or event ID…"
+              aria-label="Search observations"
+            /><select id="kind" aria-label="Filter event kind">
+              <option value="">All observations</option>
+              <option>RequestAttempt</option>
+              <option>ResponseVersion</option>
+              <option>Redirect</option>
+              <option>Termination</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>TYPE / ID</th>
+                  <th>RESOURCE</th>
+                  <th>STATUS</th>
+                  <th>CERTAINTY</th>
+                  <th>TARGET</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+            <div id="empty">
+              <div>⌁</div>
+              <h3>Your evidence starts here</h3>
+              <p>
+                Run a browser capture or open a recovered Elyon archive.<br />Every
+                observation keeps its source and certainty.
+              </p>
+            </div>
+          </div>
+          <div class="panel-footer">
+            <span id="source">Awaiting browser observations</span
+            ><span>METADATA ONLY · NO RESPONSE BODIES</span>
+          </div>
+        </div>
+        <details id="detail">
+          <summary>Selected observation</summary>
+          <pre id="json">Select a row to inspect its full evidence.</pre>
+        </details>
+        <div class="footnote">
+          This preview validates desktop Chromium. Native iOS, WebKit
+          integration, and page-visible response provenance remain unverified.
+        </div>
+      </section>
+      <section id="connect" class="view" hidden>
+        <div class="eyebrow">POWERED BY LIRILIRI / CHII</div>
+        <h1>A live window into your page.</h1>
+        <p class="intro">
+          Inspect DOM, console, and network activity through Chii’s DevTools
+          interface.
+        </p>
+        <div class="connect-grid">
+          <article class="panel instructions">
+            <span class="step">01</span>
+            <h2>Start the debugging server</h2>
+            <p>In the Elyon project folder, run:</p>
+            <pre>npm run chii</pre>
+            <p>
+              The pinned Chii server listens on port 8090. Use it on a trusted
+              local network; it has no authentication by default.
+            </p>
+            <button id="open-chii" class="primary">
+              Open Chii inspector ↗
+            </button>
+          </article>
+          <article class="panel instructions">
+            <span class="step">02</span>
+            <h2>Connect a page you control</h2>
+            <label for="chii-url">Chii server URL</label
+            ><input id="chii-url" type="url" />
+            <p>
+              Add this script to your development page, then open that page on
+              your phone.
+            </p>
+            <pre id="snippet"></pre>
+            <button id="copy">Copy script</button>
+            <p>
+              Use your computer’s reachable address on iPhone. HTTPS pages
+              require an HTTPS / WSS Chii endpoint. CSP must permit the script
+              and socket.
+            </p>
+          </article>
+        </div>
+        <article class="panel instructions">
+          <h2>Try the local playground</h2>
+          <p>
+            A small page with a counter, console logging, and a fetch request.
+            Its Chii script is loaded only when you choose to connect.
+          </p>
+          <a class="button" href="/demo" target="_blank" rel="noopener"
+            >Open playground ↗</a
+          >
+        </article>
+        <div class="footnote">
+          Chii instruments JavaScript in the connected page. Its live inspector
+          is separate from Elyon’s durable evidence broker. It cannot inspect
+          arbitrary apps or bypass Safari restrictions.
+        </div>
+      </section>
+      <section id="settings" class="view" hidden>
+        <div class="eyebrow">MAKE IT YOUR WORKSPACE</div>
+        <h1>Settings</h1>
+        <p class="intro">
+          20 original palettes. Changes apply immediately and persist on this
+          origin.
+        </p>
+        <div
+          id="workbench-themes"
+          class="workbench-themes"
+          aria-label="Workbench themes"
+        ></div>
+        <p id="theme-save-state" role="status"></p>
+        <article class="panel instructions">
+          <h2>The mobile console</h2>
+          <p>
+            Open the playground for the square, tabbed console with text size,
+            panel height, wrapping, timestamps, log limits, error capture, and
+            JavaScript execution settings.
+          </p>
+          <a href="/demo" class="button">Open mobile console ↗</a>
+        </article>
+      </section>
+      <section id="recovery" class="view" hidden>
+        <div class="eyebrow">A FOUNDATION YOU CAN KEEP</div>
+        <h1>Recovered. Reconciled. Runnable.</h1>
+        <p class="intro">
+          The recovered archive is preserved separately. This workspace builds
+          on verified source, with the limits kept visible.
+        </p>
+        <article class="panel instructions">
+          <h2>What was recovered</h2>
+          <p>
+            60 recorded edits across 24 file basenames: an authenticated
+            evidence broker, append-only journal, provenance graph, browser
+            harness, and tests. The original implementation had a command-line
+            interface.
+          </p>
+          <h2>What you can use now</h2>
+          <p>
+            This workbench runs real browser captures, filters observations,
+            opens local archives, and exports redacted evidence. Chii adds an
+            opt-in live page inspector.
+          </p>
+          <h2>What still needs device work</h2>
+          <p>
+            Native iOS integration, Safari / WebKit validation, secure remote
+            pairing, and a unified Chii-to-broker adapter. No native capability
+            is claimed from desktop tests.
+          </p>
+          <h2>Keep your work</h2>
+          <pre>
+git status
 python3 -m unittest discover -v
 npm ci
-npm start</pre><p>Source and lockfiles belong in Git. Raw captures stay in the ignored artifacts folder; export redacted archives for sharing. Download the recovery bundle supplied with this task as an additional backup.</p></article></section>
-</main><div id="toast" role="status" hidden></div><script src="/app.js"></script></body></html>
+npm start</pre
+          >
+          <p>
+            Source and lockfiles belong in Git. Raw captures stay in the ignored
+            artifacts folder; export redacted archives for sharing. Download the
+            recovery bundle supplied with this task as an additional backup.
+          </p>
+        </article>
+      </section>
+    </main>
+    <div id="toast" role="status" hidden></div>
+    <script src="/app.js"></script>
+    <script type="module" src="/settings.js"></script>
+  </body>
+</html>
