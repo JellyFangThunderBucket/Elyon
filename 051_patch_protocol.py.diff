@@ -1,0 +1,7 @@
+--- a/elyon/protocol.py
++++ b/elyon/protocol.py
+@@ -149,2 +149,4 @@
+         support = evidence.get("support", [])
++        if 'rule' in evidence:
++            text(evidence['rule'], 'inference rule')
+         if not isinstance(support, list) or any(not isinstance(x, str) or not x for x in support):

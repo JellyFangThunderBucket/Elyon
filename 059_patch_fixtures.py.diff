@@ -1,0 +1,8 @@
+--- a/elyon/fixtures.py
++++ b/elyon/fixtures.py
+@@ -54,3 +54,4 @@
+                     b'<script>const w=new Worker("/worker.js");'
+-                    b'w.onmessage=()=>console.log("elyon-worker-done");'
++                    b'w.onmessage=()=>{document.body.dataset.workerDone="true";'
++                    b'console.log("elyon-worker-done")};'
+                     b'w.postMessage("run")</script>'

@@ -1,0 +1,25 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -487,2 +487,11 @@
+                         raise AssertionError("CSP fixture failed to block fetch")
++                    async with page.expect_request(lambda request: request.url.endswith('/slow')):
++                        await page.evaluate("""() => {
++                            window.elyonPending=fetch('/slow').then(r=>r.text())
++                        }""")
++                    adapter.generation += 1
++                    adapter.upsert()
++                    client.send('activation',attachment=adapter.attachment,
++                        capture='coverage-fixtures',revision='1',target=adapter.target)
++                    await page.evaluate('() => window.elyonPending')
+                     adapter.stop()
+@@ -490,2 +499,6 @@
+                     nodes = snapshot["graph"]["nodes"]
++                    late_responses = [n for n in nodes if n['kind']=='ResponseVersion'
++                                      and n['evidence'].get('url','').endswith('/slow')]
++                    late_identity_valid = bool(late_responses) and all(
++                        n['target'] is None or n['target']['generation']=='1' for n in late_responses)
+                     sw = any(
+@@ -510,2 +523,3 @@
+                         "wire304OrCacheOriginVerified": False,
++                        'lateResponseDidNotAcquireNewGeneration':late_identity_valid,
+                     }

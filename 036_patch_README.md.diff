@@ -1,0 +1,70 @@
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,66 @@
+ # Elyon
+-Erudas dad 
++
++An evidence broker and desktop browser verification host for **Response Provenance
+++ Independent Inspection During Content Stalls**. Fresh implementation inspired by
++the usefulness of mobile inspection; no Eruda source or assets are included.
++
++This is executable desktop research, **not an iPhone browser or Gecko integration**.
++The broker preserves observations, explicit derivations, unknowns and capture gaps.
++It does not patch inspected Fetch/XHR or modify responses.
++
++## Run
++
++Python 3.12+; the broker itself has no third-party runtime dependencies.
++
++```sh
++python3 -m venv --system-site-packages .venv
++.venv/bin/python -m pip install -e '.[dev]'
++.venv/bin/python -m unittest discover -v
++.venv/bin/python -m mypy elyon
++.venv/bin/ruff check .
++.venv/bin/python -m build --no-isolation
++```
++
++The real-browser host requires `/usr/bin/chromium` and Playwright 1.62.0.
++Run it outside a nested command sandbox if the Chromium sandbox cannot initialize.
++Do not add `--no-sandbox` or disable browser policy to make it pass.
++
++```sh
++.venv/bin/python -m unittest validation.browser_check -v
++.venv/bin/python -m elyon.desktop --output artifacts/my-run --runs 100
++.venv/bin/python -m elyon.desktop --output artifacts/my-fixtures --fixtures
++```
++
++Use fresh output directories. These commands own and clean up their broker process,
++fixture server and browser. They leave a journal, evidence archive and report. The
++100-run host additionally writes a raw local snapshot and an export made during the
++stall. Local raw evidence may contain URLs; share the redacted archive instead.
++
++## Inspect without a browser
++
++The CLI is the milestone's inspection interface. No native UI is supplied.
++
++```sh
++.venv/bin/python -m elyon.cli serve --journal artifacts/manual/journal.ndjson \
++  --endpoint artifacts/manual/endpoint.json
++# In another terminal:
++.venv/bin/python -m elyon.cli command --endpoint artifacts/manual/endpoint.json \
++  '{"type":"hello"}'
++.venv/bin/python -m elyon.cli command --endpoint artifacts/manual/endpoint.json \
++  '{"type":"snapshot"}'
++.venv/bin/python -m elyon.cli command --endpoint artifacts/manual/endpoint.json \
++  '{"type":"export","redacted":true}' > artifacts/manual/export.json
++.venv/bin/python -m elyon.cli import artifacts/manual/export.json \
++  --journal artifacts/manual/imported.ndjson
++```
++
++Recorder state and capabilities are in `snapshot.captures` and `ready`; Requests
++are `RequestAttempt`/`ResponseVersion` nodes; Provenance consists of immutable nodes,
++relationships, source IDs, certainty, observation points and gaps; Export is a
++portable versioned JSON archive. Stop is a local command and never waits for content.
++The external adapter acknowledges `stopped` separately. The desktop harness performs
++the Start & Navigate stimulus; the broker never navigates inspected content itself.
++
++See [baseline](docs/BASELINE.md), [protocol](docs/PROTOCOL.md),
++[validation and limitations](docs/VALIDATION.md), and
++[native causal handoff gates](docs/CAUSAL_HANDOFF.md).

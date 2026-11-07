@@ -1,0 +1,23 @@
+--- a/tests/test_host.py
++++ b/tests/test_host.py
+@@ -2,2 +2,3 @@
+ import multiprocessing
++import socket
+ import tempfile
+@@ -7,2 +8,3 @@
+ import urllib.request
++from urllib.parse import urlsplit
+ from pathlib import Path
+@@ -79,2 +81,12 @@
+ 
++    def test_idle_socket_cannot_block_authenticated_controls(self):
++        endpoint = json.loads(self.endpoint.read_text())
++        parsed = urlsplit(endpoint['url'])
++        with socket.create_connection(('127.0.0.1',parsed.port),timeout=1):
++            request=urllib.request.Request(endpoint['url'],data=b'{"protocol":"elyon-observer/0.1",'
++                b'"type":"hello"}',headers={'Authorization':'Bearer '+endpoint['token']})
++            with urllib.request.urlopen(request,timeout=1) as response:
++                self.assertEqual(response.status,200)
++
++
+ if __name__ == "__main__":

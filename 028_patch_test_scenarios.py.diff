@@ -1,0 +1,22 @@
+--- a/tests/test_scenarios.py
++++ b/tests/test_scenarios.py
+@@ -2,8 +2,8 @@
+ 
+-from tests.test_broker import BrokerTests
++import unittest
++
++from tests.test_broker import BrokerFixture
+ 
+ 
+-class ProvenanceScenarios(BrokerTests):
+-    # Reuse only setup and command helpers; inherited broker checks intentionally
+-    # disabled below so these are additional scenarios rather than repeated counts.
++class ProvenanceScenarios(BrokerFixture, unittest.TestCase):
+     def test_revalidation_keeps_wire_and_page_visible_response_separate(self):
+@@ -49,6 +49 @@
+ 
+-# unittest will otherwise run every inherited base test a second time.
+-for _name in list(vars(BrokerTests)):
+-    if _name.startswith('test_'):
+-        setattr(ProvenanceScenarios, _name, None)
+-del BrokerTests

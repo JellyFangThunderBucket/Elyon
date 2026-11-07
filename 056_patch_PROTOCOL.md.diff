@@ -1,0 +1,7 @@
+--- a/docs/PROTOCOL.md
++++ b/docs/PROTOCOL.md
+@@ -95,3 +95,3 @@
+   delivered evidence but does not assert a live adapter connection.
+-* 256 captures and 256 targets/journal, 128 producer/epochs/attachment; metadata
++* 256 captures/journal, 256 targets/attachment, 128 producer/epochs/attachment; metadata
+   history is itself limited by the journal. Start a fresh journal when exhausted.

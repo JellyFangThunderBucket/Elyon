@@ -1,0 +1,38 @@
+--- a/docs/CAUSAL_HANDOFF.md
++++ b/docs/CAUSAL_HANDOFF.md
++# Next native increment: document → dedicated worker
++
++Status: isolated design dependency, **not implemented or verified**.
++`nativeCausalIdentity` remains unsupported. No timestamps, message payloads, hashes,
++page wrappers or matching heuristics are used to correlate messages.
++
++Before implementation, obtain a pinned, security-maintained Gecko checkout and a
++buildable desktop host. Inspect its actual document/worker postMessage cloning,
++enqueue, dispatch and cancellation paths. Verify whether an upstream actor exposes
++the needed native operation identity. No actor name or source symbol is assumed here.
++If absent, review a minimal native hook against that exact revision; document the
++line-level source, thread ownership, security review and collector shutdown path.
++
++Carry a native operation identity (producer epoch + monotonic native counter) with
++the internal message operation, outside webpage-visible payload serialization.
++Emit immutable records linked by that identity for:
++
++1. `prepared`: serialization/preparation completed or failed, document and worker identities.
++2. `enqueue-result`: accepted/rejected; rejection cannot imply eventual delivery.
++3. `dispatch-start`: worker begins delivering the corresponding event.
++4. `dispatch-end`: synchronous dispatch returned, including exception disposition.
++5. `delivery-error`: a specific failed delivery with its native operation ID.
++6. `cancelled`: lifecycle cancellation with a verified native reason.
++
++Absent phases remain absent, with coverage gaps. `dispatch-end` does not mean promises,
++network requests or any other asynchronous work launched by listeners has completed.
++No extension to shared workers, service workers, MessagePorts or arbitrary worker
++network activity belongs in this increment.
++
++Tests must force enqueue failure, worker termination before dispatch, throwing
++listeners, navigation, collector detach and transport loss. Compare instrumented
++and uninstrumented message semantics. Gate on no leaks, no webpage payload change,
++and continued broker controls during stalled content. Keep collector code behind
++explicit capabilities and pinned-revision regression tests. Engine security updates
++take precedence over retaining an obsolete hook; disable unsupported tracing until
++the updated revision is revalidated.

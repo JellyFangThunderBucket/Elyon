@@ -1,0 +1,18 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -475,8 +475,10 @@
+                     # Test content creates frames/workers; it is not injected instrumentation.
+-                    async with page.expect_console_message(
+-                        predicate=lambda message: message.text == "elyon-worker-done"
+-                    ):
+-                        await page.evaluate("""() => {const f=document.createElement('iframe');
+-                            f.src='/nested';document.body.append(f)}""")
+                     await page.evaluate("""() => {const f=document.createElement('iframe');
++                        f.src='/nested';document.body.append(f)}""")
++                    # Read durable fixture completion state rather than depending on
++                    # delivery of a transient console notification from a nested frame.
++                    await (page.frame_locator('iframe[src="/nested"]')
++                        .frame_locator('iframe[src="/frame"]')
++                        .locator('body[data-worker-done="true"]').wait_for(timeout=10000))
++                    await page.evaluate("""() => {const f=document.createElement('iframe');
+                         f.id='policy';f.src='/policy';document.body.append(f)}""")

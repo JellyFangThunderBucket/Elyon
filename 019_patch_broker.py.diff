@@ -1,0 +1,46 @@
+--- a/elyon/broker.py
++++ b/elyon/broker.py
+@@ -5,3 +5,3 @@
+ from pathlib import Path
+-from typing import Any
++from typing import Any, cast
+ 
+@@ -21,2 +21,3 @@
+     validate_event,
++    validate_message,
+ )
+@@ -89,3 +90,5 @@
+             for capture in self.captures.values():
+-                if capture["target"]["id"] == identity and (
++                if (capture['state'] in {'requested', 'active', 'stop-requested'}
++                    and capture['attachment'] == row['attachment']
++                    and capture["target"]["id"] == identity) and (
+                     capture["target"] != row["target"] or kind == "target.end"
+@@ -120,3 +123,3 @@
+         self._attached(m)
+-        capture = self.captures.get(m.get("capture"))
++        capture = self.captures.get(text(m.get("capture"), 'capture'))
+         if not capture or capture["attachment"] != m["attachment"]:
+@@ -132,2 +135,3 @@
+                 raise ProtocolError("unsupported protocol")
++            validate_message(m)
+             kind = text(m.get("type"), "type")
+@@ -212,2 +216,5 @@
+                 if kind == "activation":
++                    caps = self._attached(m)['capabilities']
++                    if not caps.get('requests') or not all(caps['requests'].values()):
++                        raise ProtocolError('requests capability not ready')
+                     if capture["state"] not in {"requested", "active"}:
+@@ -310,2 +317,3 @@
+                     {
++                        'protocol': PROTOCOL,
+                         "type": "gap",
+@@ -352,3 +360,3 @@
+         )
+-        return clone(
++        return cast(dict[str, Any], clone(
+             {
+@@ -368,3 +376,3 @@
+             }
+-        )
++        ))

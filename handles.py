@@ -1,0 +1,45 @@
+"""Local metadata handles only: no remote content calls in read or release."""
+
+import time
+from collections.abc import Callable
+from typing import Any
+
+from .protocol import clone, encode
+
+
+class Handles:
+    def __init__(self, limit: int = 128, ttl: float = 30,
+                 clock: Callable[[], float] = time.monotonic):
+        self.limit, self.ttl, self.clock = limit, ttl, clock
+        self._items: dict[str, tuple[float, dict[str, Any]]] = {}
+        self._serial = 0
+
+    def _expire(self) -> None:
+        now = self.clock()
+        self._items = {k: v for k, v in self._items.items() if v[0] > now}
+
+    def put(self, value: dict[str, Any]) -> str:
+        self._expire()
+        if len(self._items) >= self.limit or len(encode(value)) > 16384:
+            raise BufferError('handle capacity exceeded')
+        self._serial += 1
+        key = f'handle-{self._serial}'
+        self._items[key] = (self.clock() + self.ttl, clone(value))
+        return key
+
+    def read(self, key: str, fields: list[str]) -> dict[str, Any]:
+        self._expire()
+        value = self._items[key][1]
+        return {field: clone(value[field]) if field in value else
+                {'certainty': 'unavailable', 'reason': 'unsupported-field'} for field in fields}
+
+    def release(self, keys: list[str]) -> None:
+        for key in keys:
+            self._items.pop(key, None)
+
+    def clear(self) -> None:
+        self._items.clear()
+
+    def __len__(self) -> int:
+        self._expire()
+        return len(self._items)

@@ -1,0 +1,11 @@
+--- a/elyon/fixtures.py
++++ b/elyon/fixtures.py
+@@ -3,2 +3,3 @@
+ import threading
++import time
+ from collections.abc import Iterator
+@@ -24,2 +25,4 @@
+                 headers["Content-Type"], body = "text/plain", b"elyon-response-v1"
++            elif path == '/slow':
++                time.sleep(0.2)
+             elif path in {"/cache", "/revalidate"}:

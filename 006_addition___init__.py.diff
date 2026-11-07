@@ -1,0 +1,3 @@
+--- a/elyon/__init__.py
++++ b/elyon/__init__.py
++"""Elyon's engine-independent observation foundation."""

@@ -1,0 +1,18 @@
+--- a/tests/test_foundation.py
++++ b/tests/test_foundation.py
+@@ -116,2 +116,16 @@
+ 
++    def test_actual_16_mib_limit_preserves_all_delivered_rows(self):
++        with Journal(self.path) as journal:
++            count = 0
++            while True:
++                try:
++                    journal.append({'payload': 'x' * 65536})
++                    count += 1
++                except JournalFull:
++                    break
++            self.assertGreater(count, 250)
++            journal.append({'type':'gap', 'reason':'journal-full'}, control=True)
++            self.assertEqual(len(journal.entries()), count + 1)
++            self.assertLessEqual(self.path.stat().st_size, 16777216)
++

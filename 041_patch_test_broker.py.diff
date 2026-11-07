@@ -1,0 +1,15 @@
+--- a/tests/test_broker.py
++++ b/tests/test_broker.py
+@@ -330,2 +330,12 @@
+ 
++    def test_producer_gap_marks_completed_capture_incomplete(self):
++        self.start()
++        self.ingest(self.ev(kind='Gap', payload={'reason':'producer-overflow', 'missing':None}))
++        self.cmd('stop', attachment=self.a, capture='capture')
++        self.cmd('stopped', attachment=self.a, capture='capture')
++        snapshot = self.cmd('snapshot')
++        self.assertTrue(snapshot['incomplete'])
++        self.assertTrue(snapshot['gaps'])
++
++
+ if __name__ == "__main__":

@@ -1,0 +1,95 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -192,2 +192,3 @@
+                     "status": response.status,
++                    "statusObservation": "Playwright.Response.status; raw wire status unavailable",
+                     "fromServiceWorker": response.from_service_worker,
+@@ -417,2 +418,88 @@
+ 
++async def run_fixture_validation(output: Path) -> dict[str, Any]:
++    """Exercise broader fixtures without upgrading unsupported native claims."""
++    output.mkdir(parents=True, exist_ok=True)
++    endpoint = output / 'endpoint.json'
++    process = multiprocessing.get_context('spawn').Process(
++        target=serve, args=(output / 'journal.ndjson', endpoint, 0))
++    process.start()
++    try:
++        deadline = time.monotonic() + 10
++        while not endpoint.exists() and process.is_alive() and time.monotonic() < deadline:
++            await asyncio.sleep(0.01)
++        client = Client(endpoint)
++        with fixture_server() as origin:
++            async with async_playwright() as playwright:
++                browser = await playwright.chromium.launch(
++                    executable_path='/usr/bin/chromium', headless=True, chromium_sandbox=True)
++                try:
++                    context = await browser.new_context()
++                    page = await context.new_page()
++                    await page.goto(origin)
++                    adapter = DesktopAdapter(client, context)
++                    adapter.start('coverage-fixtures')
++                    statuses = await page.evaluate("""async () => {
++                        const statuses=[];
++                        for(const url of ['/cache','/cache','/revalidate','/revalidate']) {
++                            const response=await fetch(url);await response.text();
++                            statuses.push(response.status);
++                        }
++                        return statuses;
++                    }""")
++                    if statuses != [200,200,200,200]:
++                        raise AssertionError('cache/revalidation fixture failed')
++                    owned = await page.evaluate("""async () => {
++                        await navigator.serviceWorker.register('/sw.js');
++                        await navigator.serviceWorker.ready;
++                        if(!navigator.serviceWorker.controller) await new Promise(resolve=>
++                            navigator.serviceWorker.addEventListener('controllerchange',resolve,
++                                {once:true}));
++                        const r=await fetch('/sw-owned');return [r.status,await r.text()];
++                    }""")
++                    if owned != [203,'owned']:
++                        raise AssertionError('service worker fixture failed')
++                    frame = await page.frame_locator('iframe').count() if False else None
++                    # Test content creates frames/workers; it is not injected instrumentation.
++                    async with page.expect_console_message(
++                            predicate=lambda message: message.text == 'elyon-worker-done'):
++                        await page.evaluate("""() => {const f=document.createElement('iframe');
++                            f.src='/nested';document.body.append(f)}""")
++                    await page.evaluate("""() => {const f=document.createElement('iframe');
++                        f.id='policy';f.src='/policy';document.body.append(f)}""")
++                    await page.locator('#policy').wait_for()
++                    policy_frame = page.frame_locator('#policy')
++                    await policy_frame.locator('p').wait_for()
++                    iframe = page.frame(url=origin + '/policy')
++                    if iframe is None:
++                        raise AssertionError('policy frame did not load')
++                    blocked = await iframe.evaluate("""async () => {
++                        try {await fetch('/ok');return false} catch {return true}
++                    }""")
++                    if not blocked:
++                        raise AssertionError('CSP fixture failed to block fetch')
++                    adapter.stop()
++                    snapshot = client.send('snapshot')
++                    nodes = snapshot['graph']['nodes']
++                    sw = any(n['kind']=='ResponseVersion' and
++                             n['evidence'].get('fromServiceWorker') is True for n in nodes)
++                    unknown_child = any(n['target'] is None and
++                        '/worker.js' in n['evidence'].get('url','') for n in nodes)
++                    if not sw or not unknown_child or adapter.errors:
++                        raise AssertionError('missing SW/unknown target observation')
++                    adapter.close()
++                    result = {'source':SOURCE, 'cacheAndRevalidationStimuliCompleted':True,
++                        'serviceWorkerHandlingObserved':sw, 'policyFixtureBlockedFetch':bool(blocked),
++                        'nestedWorkerFixtureCompleted':True, 'unknownChildTargetsPreserved':True,
++                        'wire304OrCacheOriginVerified':False}
++                    (output / 'report.json').write_text(json.dumps(result,indent=2))
++                    (output / 'evidence.json').write_text(
++                        json.dumps(client.send('export',redacted=True),indent=2))
++                    return result
++                finally:
++                    await browser.close()
++    finally:
++        process.terminate()
++        process.join(5)
++
++
+ if __name__ == "__main__":

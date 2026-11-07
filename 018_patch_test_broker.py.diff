@@ -1,0 +1,47 @@
+--- a/tests/test_broker.py
++++ b/tests/test_broker.py
+@@ -261,2 +261,45 @@
+ 
++    def test_unhealthy_or_disabled_capabilities_cannot_report_ready(self):
++        self.cmd('detach', attachment=self.a)
++        caps = json.loads(json.dumps(CAPS))
++        caps['requests']['healthy'] = False
++        self.a = self.cmd('attach', scope={}, source='synthetic',
++                          capabilities=caps)['attachment']
++        self.cmd('target.upsert', attachment=self.a, target=TARGET, parent=None,
++                 targetKind='document')
++        self.start(activate=False)
++        with self.assertRaises(ProtocolError):
++            self.cmd('activation', attachment=self.a, capture='capture', revision='1', target=TARGET)
++        self.assertFalse(self.cmd('snapshot')['ready'])
++
++    def test_navigation_does_not_rewrite_completed_capture_coverage(self):
++        self.start()
++        self.cmd('stop', attachment=self.a, capture='capture')
++        self.cmd('stopped', attachment=self.a, capture='capture')
++        self.cmd('target.upsert', attachment=self.a, target={'id':'document','generation':'2'},
++                 parent=None, targetKind='document')
++        self.assertFalse(self.cmd('snapshot')['incomplete'])
++
++    def test_unrecognized_message_fields_and_invalid_gap_are_rejected(self):
++        for kind, extra in [('health', {'healthy':True, 'reason':'ok', 'secret':'SECRET'}),
++                            ('gap', {'reason':'missing', 'missing':['5','1']})]:
++            with self.subTest(kind=kind), self.assertRaises(ProtocolError):
++                self.cmd(kind, attachment=self.a, **extra)
++
++    def test_exhausted_journal_export_remains_importable(self):
++        self.test_journal_exhaustion_records_gap_without_evicting()
++        exported = self.cmd('export', redacted=False)
++        restored = import_archive(Path(self.tmp.name) / 'full-import', exported)
++        restored.close()
++
++    def test_import_rejects_tampered_or_semantically_invalid_archive_without_creating_file(self):
++        self.start()
++        self.ingest(self.ev())
++        exported = self.cmd('export', redacted=False)
++        exported['entries'][-1]['batch'][0]['sequence'] = 'invalid'
++        path = Path(self.tmp.name) / 'bad-import'
++        with self.assertRaises(ProtocolError):
++            import_archive(path, exported)
++        self.assertFalse(path.exists())
++

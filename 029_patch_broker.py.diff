@@ -1,0 +1,7 @@
+--- a/elyon/broker.py
++++ b/elyon/broker.py
+@@ -224,2 +224,4 @@
+                     self._current_target(m.get("target"))
++                    if m['target']['id'] != capture['target']['id']:
++                        raise ProtocolError('activation belongs to an unrelated target')
+                 elif kind == "stop" and capture["state"] not in {"requested", "active"}:

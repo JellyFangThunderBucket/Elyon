@@ -1,0 +1,563 @@
+{
+  "title": "Elyon source recovery evidence",
+  "captured_response": "shared-thread JSON (not the live Codex workspace)",
+  "total_change_entries": 60,
+  "change_batches": 31,
+  "unique_filenames": 24,
+  "initial_additions": 23,
+  "later_patch_events": 37,
+  "path_provenance": "Full paths inferred from docs/RESULTS.md; shared-thread records only supplied basenames.",
+  "assurances": [
+    "Original network headers and bearer token excluded",
+    "Original chat messages excluded",
+    "All 60 source change records preserved in sequence"
+  ],
+  "limitations": [
+    "The source snapshots and changes may not be the complete final working tree.",
+    "Some patch hunks do not align with previously recorded snapshots; they require reconciliation.",
+    "No tests, compilation, or real-browser validation performed for the recovered files.",
+    "Initial source snapshots must not be called the final working application."
+  ],
+  "records": [
+    {
+      "sequence": 1,
+      "turn_index": 3,
+      "path": ".gitignore",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/001_addition_.gitignore.diff",
+      "diff_sha256": "6c88363ae38eb68e16e47b5eeb1cc6feab42f4287a98d8098b7a85aafd48a5c3"
+    },
+    {
+      "sequence": 2,
+      "turn_index": 3,
+      "path": "docs/BASELINE.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/002_addition_BASELINE.md.diff",
+      "diff_sha256": "18dce933c711148eff8f8bf989ba84aa1470cbc15c3e8191de855cb573c71163"
+    },
+    {
+      "sequence": 3,
+      "turn_index": 3,
+      "path": "docs/superpowers/plans/2026-11-06-observation-foundation.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/003_addition_2026-11-06-observation-foundation.md.diff",
+      "diff_sha256": "7b0f46c240f3902bc5972a55eed246cc3c8e013691624020a32b6d5e97e136f4"
+    },
+    {
+      "sequence": 4,
+      "turn_index": 3,
+      "path": "pyproject.toml",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/004_addition_pyproject.toml.diff",
+      "diff_sha256": "404fbed0918c23c113bf996e2671ed4efb9b3e9645aab1b5ebddc32b9a4ead1e"
+    },
+    {
+      "sequence": 5,
+      "turn_index": 3,
+      "path": "tests/test_foundation.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/005_addition_test_foundation.py.diff",
+      "diff_sha256": "a276846ded550b0da9995fc1eeee77485714532bd062ad16ae72065fdf6c80b4"
+    },
+    {
+      "sequence": 6,
+      "turn_index": 3,
+      "path": "elyon/__init__.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/006_addition___init__.py.diff",
+      "diff_sha256": "87b8adb0fead9b2adf4c49b1528e4677f02e44b3dcdb9b2e964d9a41bc0b8f7e"
+    },
+    {
+      "sequence": 7,
+      "turn_index": 3,
+      "path": "elyon/handles.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/007_addition_handles.py.diff",
+      "diff_sha256": "0d9f73aefc798b0c266417bf4b586d78488a7ec7c588b7c39832b571b7759a39"
+    },
+    {
+      "sequence": 8,
+      "turn_index": 3,
+      "path": "elyon/journal.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/008_addition_journal.py.diff",
+      "diff_sha256": "10ce7fa6bfccf64287b7b320bf53e07b8ff4c1463a4eb0ea572dd12be55021f8"
+    },
+    {
+      "sequence": 9,
+      "turn_index": 3,
+      "path": "elyon/protocol.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/009_addition_protocol.py.diff",
+      "diff_sha256": "7ac93aed400fa419775780254f1bb8855f36affc427c7913897d76860848ee03"
+    },
+    {
+      "sequence": 10,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/010_addition_test_broker.py.diff",
+      "diff_sha256": "99afcf076788479cab83a3bb42d376240f479fb44321331f26b66e82ae54c474"
+    },
+    {
+      "sequence": 11,
+      "turn_index": 3,
+      "path": "elyon/broker.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/011_addition_broker.py.diff",
+      "diff_sha256": "365a14457cf2882b8f04162ed2543c50eb4de80f74d5929427e300b6f71f4e33"
+    },
+    {
+      "sequence": 12,
+      "turn_index": 3,
+      "path": "elyon/graph.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/012_addition_graph.py.diff",
+      "diff_sha256": "15da277829ccd6e4950a21ba6b34264a6d01a8af60f4bf9a45caef89cc507b6e"
+    },
+    {
+      "sequence": 13,
+      "turn_index": 3,
+      "path": "tests/test_host.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/013_addition_test_host.py.diff",
+      "diff_sha256": "1051e23fb178b0da9d65c47f0ea727ba280f95e54f6bdfb9d59ae736688505f2"
+    },
+    {
+      "sequence": 14,
+      "turn_index": 3,
+      "path": "elyon/cli.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/014_addition_cli.py.diff",
+      "diff_sha256": "528fbeddbe5adee586b0097a3ccdcfc5ce5b2447f03f04d640a8be4371c9f23c"
+    },
+    {
+      "sequence": 15,
+      "turn_index": 3,
+      "path": "elyon/fixtures.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/015_addition_fixtures.py.diff",
+      "diff_sha256": "c6cee81f6cc0cc5d594b86c2f12477f307e0d75301a1f12cc9bb8421aa1d60e5"
+    },
+    {
+      "sequence": 16,
+      "turn_index": 3,
+      "path": "validation/browser_check.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/016_addition_browser_check.py.diff",
+      "diff_sha256": "136a14f299c87ea3ebad2a3fd28597a91c7371b709eea241b50898d3c7097bb5"
+    },
+    {
+      "sequence": 17,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/017_addition_desktop.py.diff",
+      "diff_sha256": "2426205d0586e92c25ce6f2f0fa4cc6a267ac43b1e8da82e2ae5be252c7758f1"
+    },
+    {
+      "sequence": 18,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/018_patch_test_broker.py.diff",
+      "diff_sha256": "0a450bffb241cca02ba0ae19c0e94bcd78a7175edc59bf021bb621130e063d53"
+    },
+    {
+      "sequence": 19,
+      "turn_index": 3,
+      "path": "elyon/broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/019_patch_broker.py.diff",
+      "diff_sha256": "ad34ea5172ae09b9e6f23d121a1afdca05a26474870ca38f40b34bd12d6dbb09"
+    },
+    {
+      "sequence": 20,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/020_patch_desktop.py.diff",
+      "diff_sha256": "afd395e27a4328c358064300ea752894d02f9182bddb532d9e323990cb0a179b"
+    },
+    {
+      "sequence": 21,
+      "turn_index": 3,
+      "path": "elyon/protocol.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/021_patch_protocol.py.diff",
+      "diff_sha256": "a338d431e1ac9ac6c1e5d727f5e1765684068c837ea140d307c9ce67a76e22b2"
+    },
+    {
+      "sequence": 22,
+      "turn_index": 3,
+      "path": "elyon/broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/022_patch_broker.py.diff",
+      "diff_sha256": "da37c489584fff888b2f6b665c4b56473bbbca15b734356a797dccfa0680a22a"
+    },
+    {
+      "sequence": 23,
+      "turn_index": 3,
+      "path": "tests/test_scenarios.py",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/023_addition_test_scenarios.py.diff",
+      "diff_sha256": "15b496db412c84924a5102feca2afdf60124b5537a1d3b8e13c994c4266ff9ba"
+    },
+    {
+      "sequence": 24,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/024_patch_test_broker.py.diff",
+      "diff_sha256": "2952e304917051722f5bc55e4ac5a0642ab33d8acbc3cf2c2d29ff7f42f42cb5"
+    },
+    {
+      "sequence": 25,
+      "turn_index": 3,
+      "path": "tests/test_foundation.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/025_patch_test_foundation.py.diff",
+      "diff_sha256": "8b5f86a9b080a267980f357cebda4dc02bcc6f52b956ca634ae214f6e4728ce0"
+    },
+    {
+      "sequence": 26,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/026_patch_test_broker.py.diff",
+      "diff_sha256": "894128c12c10bf190511600b15bcc464ad40354b50fa85b04c2948376060afad"
+    },
+    {
+      "sequence": 27,
+      "turn_index": 3,
+      "path": "tests/test_host.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/027_patch_test_host.py.diff",
+      "diff_sha256": "83993e5af0a992a2b19f24c4c9eaa2ecead10f04fe31f72667d4a7740c0bf1e7"
+    },
+    {
+      "sequence": 28,
+      "turn_index": 3,
+      "path": "tests/test_scenarios.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/028_patch_test_scenarios.py.diff",
+      "diff_sha256": "7a8ddb85d5fd525837511ab5bca213e40b016982abe52686d8828fd2460439e9"
+    },
+    {
+      "sequence": 29,
+      "turn_index": 3,
+      "path": "elyon/broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/029_patch_broker.py.diff",
+      "diff_sha256": "3268745cad6f06a8cb5e74a611de37cc9f673292791f9fc82b88e58b1d1c0f3e"
+    },
+    {
+      "sequence": 30,
+      "turn_index": 3,
+      "path": "elyon/cli.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/030_patch_cli.py.diff",
+      "diff_sha256": "2dfe354a958e9972e724a4aa92457682e80bb85323d2042f5348c2ff1ebd3cac"
+    },
+    {
+      "sequence": 31,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/031_patch_desktop.py.diff",
+      "diff_sha256": "b854f749cd4d6c88070edf5c6b6c82fb46664c5be3a4703cd9b825d60e309e67"
+    },
+    {
+      "sequence": 32,
+      "turn_index": 3,
+      "path": "validation/browser_check.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/032_patch_browser_check.py.diff",
+      "diff_sha256": "b498878e666f9f23283489e7f786ae3baf6efa6644b8a0e41dab2ec248343b85"
+    },
+    {
+      "sequence": 33,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/033_patch_desktop.py.diff",
+      "diff_sha256": "397ca99cc2e9aebaa5d52ece694e769ea90821ac394cd76c7629dce6875a4572"
+    },
+    {
+      "sequence": 34,
+      "turn_index": 3,
+      "path": "elyon/fixtures.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/034_patch_fixtures.py.diff",
+      "diff_sha256": "28f4a217caab8d75bd73b1eb8bf16e618b67ddbb392fec63b5d62162ee52ce30"
+    },
+    {
+      "sequence": 35,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/035_patch_desktop.py.diff",
+      "diff_sha256": "48a19b96470fcd32d4312a58c1fa8b489124c34a0719e96f98bb982f02f19f8e"
+    },
+    {
+      "sequence": 36,
+      "turn_index": 3,
+      "path": "README.md",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/036_patch_README.md.diff",
+      "diff_sha256": "ab9b98914c450fc75e9c7ab04be3d6995b5c54d94c3345f24aa9e846517135b7"
+    },
+    {
+      "sequence": 37,
+      "turn_index": 3,
+      "path": "docs/CAUSAL_HANDOFF.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/037_addition_CAUSAL_HANDOFF.md.diff",
+      "diff_sha256": "b09121cdeed7fc78b4f63c4293a0b975c9e98f26ae2b9dff2b7c55dd3efdfb48"
+    },
+    {
+      "sequence": 38,
+      "turn_index": 3,
+      "path": "docs/PROTOCOL.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/038_addition_PROTOCOL.md.diff",
+      "diff_sha256": "8c4c12fde27294e78794399f097aac8f777e734ea76d5b44edb190aaf8c6c8d8"
+    },
+    {
+      "sequence": 39,
+      "turn_index": 3,
+      "path": "docs/VALIDATION.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/039_addition_VALIDATION.md.diff",
+      "diff_sha256": "d8531c010308d9ad86dac7caeeeee93bf4a4a13ef460fe401cd954d793b34159"
+    },
+    {
+      "sequence": 40,
+      "turn_index": 3,
+      "path": "MANIFEST.in",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/040_addition_MANIFEST.in.diff",
+      "diff_sha256": "32ad92f8a7aadf1f5b1824184401f0da55573ad33217d9df814caef41dcdaa78"
+    },
+    {
+      "sequence": 41,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/041_patch_test_broker.py.diff",
+      "diff_sha256": "b0539782d84db225c8418e6d7ad82acd82ad9a414b202ff5863aafbaced3723f"
+    },
+    {
+      "sequence": 42,
+      "turn_index": 3,
+      "path": "tests/test_host.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/042_patch_test_host.py.diff",
+      "diff_sha256": "e1aac5638d2130254e0fccf933666fc3aaf84e5f08d46818b7cb5431ce013d08"
+    },
+    {
+      "sequence": 43,
+      "turn_index": 3,
+      "path": "tests/test_broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/043_patch_test_broker.py.diff",
+      "diff_sha256": "4ac5a7549adccdd7ecd03c8088ae083fb9508eafc836402391e3861b17ddc250"
+    },
+    {
+      "sequence": 44,
+      "turn_index": 3,
+      "path": "tests/test_host.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/044_patch_test_host.py.diff",
+      "diff_sha256": "f783eef3856dfb2e24f4d64a5eb3d4260c314280b79998df810247af646134a0"
+    },
+    {
+      "sequence": 45,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/045_patch_desktop.py.diff",
+      "diff_sha256": "6223ec2335b3f4cfd4da22ac8f810b931c9f92f29113a9bc6bb99e5cc4f2221e"
+    },
+    {
+      "sequence": 46,
+      "turn_index": 3,
+      "path": "elyon/fixtures.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/046_patch_fixtures.py.diff",
+      "diff_sha256": "e1a44462fec461b5d881863ceaf960a0f2337d961c1a9634dc2fbe02ed22bae9"
+    },
+    {
+      "sequence": 47,
+      "turn_index": 3,
+      "path": "validation/browser_check.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/047_patch_browser_check.py.diff",
+      "diff_sha256": "6a329de2a0905f3bc5245ac4b6cfc0266b687a3ab86881b54b3543c39f25696e"
+    },
+    {
+      "sequence": 48,
+      "turn_index": 3,
+      "path": "tests/test_host.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/048_patch_test_host.py.diff",
+      "diff_sha256": "28dae60671041464f25f01218d522d44d6518838119017e03bb0c653f6c73e08"
+    },
+    {
+      "sequence": 49,
+      "turn_index": 3,
+      "path": "elyon/broker.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/049_patch_broker.py.diff",
+      "diff_sha256": "8dc01827517739ed90c89a8d570028d05f713954409507771b194340d2580698"
+    },
+    {
+      "sequence": 50,
+      "turn_index": 3,
+      "path": "elyon/cli.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/050_patch_cli.py.diff",
+      "diff_sha256": "46245f32a00ad6410953b1cba023784c8b87177ae68417421ee1cc507cc484d7"
+    },
+    {
+      "sequence": 51,
+      "turn_index": 3,
+      "path": "elyon/protocol.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/051_patch_protocol.py.diff",
+      "diff_sha256": "acf9b97d622b1d159811ec89b6e32a139c4a1ca89ab02a7dd8aec2d96fdc03d4"
+    },
+    {
+      "sequence": 52,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/052_patch_desktop.py.diff",
+      "diff_sha256": "aa82321595ff90af7aa3e16af193174073ca848c67783392cb407da9aa2732ce"
+    },
+    {
+      "sequence": 53,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/053_patch_desktop.py.diff",
+      "diff_sha256": "c89e6f32ce1c685e9740089450bd3ca615561b680cfc41d45775c2bcc55abb97"
+    },
+    {
+      "sequence": 54,
+      "turn_index": 3,
+      "path": "elyon/fixtures.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/054_patch_fixtures.py.diff",
+      "diff_sha256": "fa622083ab0e353d75c8a4a50c340f491789ae5ad6897823e341fe02cb0d5462"
+    },
+    {
+      "sequence": 55,
+      "turn_index": 3,
+      "path": "validation/browser_check.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/055_patch_browser_check.py.diff",
+      "diff_sha256": "383597b1781235976cb4f7077e67f55770a9ff67915ffbd301f851dd858f07cd"
+    },
+    {
+      "sequence": 56,
+      "turn_index": 3,
+      "path": "docs/PROTOCOL.md",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/056_patch_PROTOCOL.md.diff",
+      "diff_sha256": "721ed4bfe969f12a6eba25f2d3a95f37fb0a6fcb2ec6e47d1c9a509b1715d340"
+    },
+    {
+      "sequence": 57,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/057_patch_desktop.py.diff",
+      "diff_sha256": "0eee99dd876f68c834d33e2d9bee846d302e1058291a7173dc798e85670202dd"
+    },
+    {
+      "sequence": 58,
+      "turn_index": 3,
+      "path": "elyon/desktop.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/058_patch_desktop.py.diff",
+      "diff_sha256": "b7d6734585e818d1598410c9a3cfaf62956247c0a43b62197de2fff89b2c62f3"
+    },
+    {
+      "sequence": 59,
+      "turn_index": 3,
+      "path": "elyon/fixtures.py",
+      "change_type": "patch",
+      "status": "completed",
+      "diff_file": "changes/059_patch_fixtures.py.diff",
+      "diff_sha256": "b91d949c896f1d91c775efa916b34c1fc3da2c060d7db1233810d13c6daf75dd"
+    },
+    {
+      "sequence": 60,
+      "turn_index": 3,
+      "path": "docs/RESULTS.md",
+      "change_type": "addition",
+      "status": "completed",
+      "diff_file": "changes/060_addition_RESULTS.md.diff",
+      "diff_sha256": "f984bb6e6f85f6c745c24fac033aa3055c35ff1e4039b029f5abd972fdb6a19d"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+--- a/elyon/broker.py
++++ b/elyon/broker.py
+@@ -337,2 +337,3 @@
+                     {
++                        "protocol": PROTOCOL,
+                         "type": "gap",

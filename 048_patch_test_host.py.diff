@@ -1,0 +1,44 @@
+--- a/tests/test_host.py
++++ b/tests/test_host.py
+@@ -3,2 +3,3 @@
+ import socket
++import threading
+ import tempfile
+@@ -10,2 +11,3 @@
+ from pathlib import Path
++from http.server import BaseHTTPRequestHandler, HTTPServer
+ 
+@@ -91,2 +93,33 @@
+ 
++    def test_client_never_follows_redirects_with_broker_credentials(self):
++        followed = []
++        class Redirect(BaseHTTPRequestHandler):
++            def log_message(self, *args):
++                pass
++            def do_POST(self):
++                self.send_response(302)
++                self.send_header('Location', '/leak')
++                self.end_headers()
++            def do_GET(self):
++                followed.append(self.headers.get('Authorization'))
++                self.send_response(200)
++                self.end_headers()
++                self.wfile.write(b'{}')
++        server = HTTPServer(('127.0.0.1',0),Redirect)
++        thread = threading.Thread(target=server.serve_forever,daemon=True)
++        thread.start()
++        try:
++            path=Path(self.tmp.name)/'redirect-endpoint'
++            path.write_text(json.dumps({'url':f'http://127.0.0.1:{server.server_port}/command',
++                                        'token':'private'}))
++            with self.assertRaises(urllib.error.HTTPError) as error:
++                Client(path).send('hello')
++            self.assertEqual(error.exception.code,302)
++            self.assertEqual(followed,[])
++        finally:
++            server.shutdown()
++            server.server_close()
++            thread.join(3)
++
++
+ if __name__ == "__main__":

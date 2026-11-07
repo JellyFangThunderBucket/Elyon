@@ -1,0 +1,19 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -506,2 +506,5 @@
+                     await page.evaluate("() => window.elyonPending")
++                    failed = await page.evaluate("""async () => {
++                        try {await fetch('/disconnect');return false} catch {return true}
++                    }""")
+                     adapter.stop()
+@@ -509,2 +512,6 @@
+                     nodes = snapshot["graph"]["nodes"]
++                    failure_refs = [n['evidence'].get('request') for n in nodes
++                                    if n['kind']=='Termination']
++                    failure_ids_valid = bool(failed and failure_refs) and all(
++                        value is None or isinstance(value,str) for value in failure_refs)
+                     late_responses = [
+@@ -540,2 +547,3 @@
+                         "lateResponseDidNotAcquireNewGeneration": late_identity_valid,
++                        'failedRequestReferencesValid':failure_ids_valid,
+                     }

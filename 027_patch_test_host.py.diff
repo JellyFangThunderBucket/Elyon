@@ -1,0 +1,11 @@
+--- a/tests/test_host.py
++++ b/tests/test_host.py
+@@ -64,2 +64,9 @@
+ 
++    def test_preexisting_endpoint_is_never_removed_or_overwritten(self):
++        existing = Path(self.tmp.name) / 'user-endpoint'
++        existing.write_text('preserve me')
++        with self.assertRaises(FileExistsError):
++            serve(Path(self.tmp.name) / 'second-journal', existing, 0)
++        self.assertEqual(existing.read_text(), 'preserve me')
++

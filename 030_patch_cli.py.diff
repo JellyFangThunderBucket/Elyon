@@ -1,0 +1,32 @@
+--- a/elyon/cli.py
++++ b/elyon/cli.py
+@@ -8,2 +8,3 @@
+ import signal
++import tempfile
+ import urllib.request
+@@ -80,6 +81,7 @@
+     server = HTTPServer(("127.0.0.1", port), Handler)
++    endpoint_inode: int | None = None
+     try:
+         endpoint.parent.mkdir(parents=True, exist_ok=True)
+-        descriptor = os.open(endpoint, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+-        with os.fdopen(descriptor, "wb") as output:
++        with tempfile.NamedTemporaryFile(dir=endpoint.parent, delete=False) as output:
++            temporary = Path(output.name)
+             output.write(
+@@ -87,2 +89,9 @@
+             )
++            output.flush()
++            os.fsync(output.fileno())
++        try:
++            os.link(temporary, endpoint)
++            endpoint_inode = endpoint.stat().st_ino
++        finally:
++            temporary.unlink()
+         # SIGTERM follows the same cleanup path as an interactive Ctrl-C.
+@@ -95,3 +104,5 @@
+         broker.close()
+-        endpoint.unlink(missing_ok=True)
++        if endpoint_inode is not None and endpoint.exists():
++            if endpoint.stat().st_ino == endpoint_inode:
++                endpoint.unlink()

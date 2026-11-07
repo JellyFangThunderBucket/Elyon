@@ -1,0 +1,15 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -414,4 +414,7 @@
+     parser.add_argument("--runs", type=int, default=100)
++    parser.add_argument('--fixtures', action='store_true')
+     args = parser.parse_args()
+-    print(json.dumps(asyncio.run(run_validation(args.output, args.runs)), indent=2))
++    workload = run_fixture_validation(args.output) if args.fixtures else run_validation(
++        args.output, args.runs)
++    print(json.dumps(asyncio.run(workload), indent=2))
+ 
+@@ -462,3 +465,2 @@
+                         raise AssertionError("service worker fixture failed")
+-                    frame = await page.frame_locator("iframe").count() if False else None
+                     # Test content creates frames/workers; it is not injected instrumentation.

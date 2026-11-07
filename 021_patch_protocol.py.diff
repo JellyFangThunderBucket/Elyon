@@ -1,0 +1,46 @@
+--- a/elyon/protocol.py
++++ b/elyon/protocol.py
+@@ -29,2 +29,22 @@
+ 
++# Required and optional fields for the broker-facing half of the protocol.
++MESSAGES = {
++    'hello': (set(), set()), 'snapshot': (set(), set()),
++    'export': (set(), {'redacted'}),
++    'attach': ({'scope', 'source', 'capabilities'}, set()),
++    'detach': ({'attachment'}, set()),
++    'target.upsert': ({'attachment', 'target', 'parent', 'targetKind'}, set()),
++    'target.end': ({'attachment', 'target', 'reason'}, set()),
++    'start': ({'attachment', 'capture', 'revision', 'plan', 'target'}, set()),
++    'activation': ({'attachment', 'capture', 'revision', 'target'}, set()),
++    'stop': ({'attachment', 'capture'}, set()),
++    'stopped': ({'attachment', 'capture'}, set()),
++    'events': ({'attachment', 'batch'}, set()),
++    'gap': ({'attachment', 'reason', 'missing'}, set()),
++    'health': ({'attachment', 'reason', 'healthy'}, set()),
++    'handle': ({'attachment', 'id'}, set()),
++    'read': ({'attachment', 'handle', 'fields'}, set()),
++    'release': ({'attachment', 'handles'}, set()),
++}
++
+ 
+@@ -34,2 +54,20 @@
+ 
++def validate_message(message: dict[str, Any]) -> None:
++    kind = text(message.get('type'), 'type')
++    if kind not in MESSAGES:
++        raise ProtocolError('unknown message type')
++    required, optional = MESSAGES[kind]
++    base = {'protocol', 'type'}
++    if not required | base <= set(message) or set(message) - (required | optional | base):
++        raise ProtocolError('message fields do not match protocol')
++    if kind == 'export' and not isinstance(message.get('redacted', True), bool):
++        raise ProtocolError('redacted must be boolean')
++    if kind == 'gap' and message['missing'] is not None:
++        missing = message['missing']
++        if not isinstance(missing, list) or len(missing) != 2:
++            raise ProtocolError('missing requires null or uint64 range')
++        if uint64(missing[0]) > uint64(missing[1]):
++            raise ProtocolError('missing sequence range regressed')
++
++
+ def encode(value: Any) -> bytes:

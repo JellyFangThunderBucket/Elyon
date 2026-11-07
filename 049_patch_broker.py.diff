@@ -1,0 +1,28 @@
+--- a/elyon/broker.py
++++ b/elyon/broker.py
+@@ -3,2 +3,3 @@
+ import hashlib
++import os
+ import threading
+@@ -100,2 +101,6 @@
+                 self.sequences[(e["producer"], e["epoch"])] = int(e["sequence"])
++                if e['kind'] == 'Gap':
++                    self.gaps.append({'type':'gap', 'reason':'producer-gap',
++                        'id':e['id'],'capture':e['capture'],'source':e['source'],
++                        'evidence':clone(e['evidence'])})
+             self.gaps.extend(clone(row["gaps"]))
+@@ -188,2 +193,4 @@
+                 if kind == "target.upsert":
++                    if old and old['ended'] and old['target'] == m['target']:
++                        raise ProtocolError('ended target generation cannot be reused')
+                     text(m.get("targetKind"), "targetKind")
+@@ -474,7 +481,6 @@
+     # Exclusive create preserves user files and prevents partial validated imports on failure.
+-    with path.open("xb") as destination:
++    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
++    with os.fdopen(descriptor, 'wb') as destination:
+         destination.write(data)
+         destination.flush()
+-        import os
+-
+         os.fsync(destination.fileno())

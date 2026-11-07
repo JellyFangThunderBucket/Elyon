@@ -1,0 +1,5 @@
+--- a/validation/browser_check.py
++++ b/validation/browser_check.py
+@@ -21,2 +21,3 @@
+             self.assertFalse(result["wire304OrCacheOriginVerified"])
++            self.assertTrue(result['lateResponseDidNotAcquireNewGeneration'])

@@ -1,0 +1,22 @@
+--- a/tests/test_broker.py
++++ b/tests/test_broker.py
+@@ -184,3 +184,8 @@
+         old = self.a
+-        for _ in range(100):
++        for cycle in range(100):
++            self.start(str(cycle))
++            value = self.ev(capture=str(cycle))
++            self.ingest(value)
++            self.cmd('handle', attachment=self.a, id=value['id'])
++            self.assertEqual(self.cmd('snapshot')['retainedHandles'], 1)
+             self.cmd("detach", attachment=self.a)
+@@ -313,2 +318,10 @@
+ 
++    def test_old_capture_cannot_activate_an_unrelated_target(self):
++        self.start(activate=False)
++        other = {'id':'other-document', 'generation':'1'}
++        self.cmd('target.upsert', attachment=self.a, target=other,
++                 parent=None, targetKind='document')
++        with self.assertRaises(ProtocolError):
++            self.cmd('activation', attachment=self.a, capture='capture', revision='1', target=other)
++

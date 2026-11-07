@@ -1,0 +1,38 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -52,3 +52,3 @@
+         self.generation = 1
+-        self.requests: OrderedDict[Request, str] = OrderedDict()
++        self.requests: OrderedDict[Request, tuple[str, dict[str, str] | None]] = OrderedDict()
+         self.active = True
+@@ -147,4 +147,5 @@
+             if previous is not None:
+-                source = self.requests.get(previous)
+-                if source:
++                prior = self.requests.get(previous)
++                if prior:
++                    source = prior[0]
+                     redirect = self.emit(
+@@ -174,3 +175,3 @@
+                     )
+-            self.requests[request] = identity
++            self.requests[request] = (identity, self.request_target(request))
+             if len(self.requests) > 256:
+@@ -187,2 +188,5 @@
+         try:
++            retained = self.requests.get(response.request)
++            original_target = retained[1] if retained else None
++            response_target = original_target if original_target == self.target else None
+             identity = self.emit(
+@@ -194,2 +198,3 @@
+                     "fromServiceWorker": response.from_service_worker,
++                    'requestObservedTarget':original_target,
+                     "sourceClassification": {
+@@ -200,5 +205,5 @@
+                 },
+-                identity=self.request_target(response.request),
++                identity=response_target,
+             )
+-            request_id = self.requests.get(response.request)
++            request_id = retained[0] if retained else None
+             if request_id:

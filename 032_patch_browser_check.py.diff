@@ -1,0 +1,19 @@
+--- a/validation/browser_check.py
++++ b/validation/browser_check.py
+@@ -8,3 +8,3 @@
+ 
+-from elyon.desktop import run_validation
++from elyon.desktop import run_validation, run_fixture_validation
+ 
+@@ -12,2 +12,11 @@
+ class DesktopAcceptance(unittest.TestCase):
++    def test_real_cache_sw_policy_and_nested_fixture_coverage(self):
++        with tempfile.TemporaryDirectory() as root:
++            result = asyncio.run(run_fixture_validation(Path(root)))
++            self.assertTrue(result['cacheAndRevalidationStimuliCompleted'])
++            self.assertTrue(result['serviceWorkerHandlingObserved'])
++            self.assertTrue(result['policyFixtureBlockedFetch'])
++            self.assertTrue(result['nestedWorkerFixtureCompleted'])
++            self.assertTrue(result['unknownChildTargetsPreserved'])
++            self.assertFalse(result['wire304OrCacheOriginVerified'])
+     def test_real_response_redirect_stall_and_termination_100_runs(self):

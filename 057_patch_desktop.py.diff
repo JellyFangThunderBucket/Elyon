@@ -1,0 +1,11 @@
+--- a/elyon/desktop.py
++++ b/elyon/desktop.py
+@@ -225,2 +225,3 @@
+             try:
++                retained = self.requests.get(request)
+                 self.emit(
+@@ -228,3 +229,3 @@
+                     {
+-                        "request": self.requests.get(request),
++                        "request": retained[0] if retained else None,
+                         "failure": request.failure,

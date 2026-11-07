@@ -1,0 +1,5 @@
+--- a/validation/browser_check.py
++++ b/validation/browser_check.py
+@@ -22,2 +22,3 @@
+             self.assertTrue(result["lateResponseDidNotAcquireNewGeneration"])
++            self.assertTrue(result['failedRequestReferencesValid'])
