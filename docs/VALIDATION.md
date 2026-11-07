@@ -1,0 +1,75 @@
+> Historical recovered record. For current layout and validation, see
+> [the repository audit](REPOSITORY-AUDIT.md) and [current product direction](PRODUCT-DIRECTION.md).
+
+# Validation scope
+
+This milestone implements an executable broker/adapter contract and a desktop
+research host. It does not complete the whole product or native Gecko observation.
+
+## Checks and interpretation
+
+`python -m unittest discover -v` executes broker/storage/protocol/HTTP regression
+tests. Synthetic evidence is labeled `source: synthetic`. These include:
+100 deterministic family fixture iterations, 100 attach/detach cycles with live
+metadata handles, redirect-status-without-edge, cache revalidation versus exposure,
+unknown SW origin, explicit policy versus unexplained failure, frame/worker target
+identities, navigation activation races, interrupted transport, producer epochs,
+duplicates/gaps/out-of-order sequences, atomic rejection, journal pressure, actual
+16 MiB fill, writer exclusivity, truncated tails, restart, export/reimport,
+conservative redaction, handle expiry/unsupported fields and HTTP authentication.
+These are contract tests, not native browser validation.
+
+`python -m unittest validation.browser_check -v` separately executes real Chromium
+acceptance checks with the browser sandbox enabled:
+
+* 100 repeated browser Fetch requests through `/redirect` → `/ok`. Each capture
+  must preserve 302 and 200 Playwright response metadata and one redirect edge
+  based on `Request.redirected_from` identity. Fixture returns the expected body.
+* During a real five-second busy loop in page JavaScript, broker snapshots, Stop
+  request and export execute independently. Stop acknowledgment is separate from
+  producer stopped acknowledgment. This measures local Python control transport,
+  **not native UI latency**. The source busy loop is deliberate fixture stimulus.
+* A documented Chromium `Page.crash` command crashes the renderer; delivered
+  evidence IDs remain queryable, and termination/target end are preserved.
+* Cache and ETag revalidation fixtures complete, but the host does not expose raw
+  wire 304 or verify memory/disk cache origin. SW response handling is observed via
+  `Response.from_service_worker`; synthetic/Cache Storage/network origin stays unknown.
+* A CSP fixture blocks a Fetch and nested-frame worker stimulus completes. Actual
+  policy enforcement source and detailed worker target identities are unsupported;
+  the host retains unknown child targets instead of assigning them to the document.
+
+The two real checks fail rather than skip if Chromium or its sandbox cannot run.
+Playwright uses an automation profile: these results are evidence about that host,
+not behavior/performance equivalence to shipping Firefox, Safari or an iPhone.
+
+## Unsupported and unmeasured
+
+No native UI, iPhone, simulator, Gecko engine fork, Gecko RDP actors, native
+channel/cache/policy hooks, raw HTTP 304, page-visible Fetch/XHR exposure, native
+causal handoff, artifact/body retention, multi-page identity management or automatic
+native generation discovery. Scope is one coordinated desktop page; not a general
+interactive browsing engine. A live collector heartbeat/automatic reconnect protocol
+and real adapter subscription-retention benchmark are follow-ups; the broker's
+lifecycle/handle tests do not establish those engine properties.
+
+Native UI p95 <100ms, metadata interaction median overhead <5%, native tail latency,
+incremental browser memory and native collector retention are **unmeasured**. Local
+broker timing samples in harness output are not substitutes. No simulated benchmark
+is used to pass these targets.
+
+Apple entitlement, signing, alternative-engine deployment, JIT, regional and
+process-isolation requirements could not be checked against current Apple docs
+because network policy denied the documentation host. Linux also lacks the native
+toolchain and hardware. These remain external feasibility gates, not solved issues.
+
+## Decision and smallest follow-up
+
+Keep Gecko **research-only pending narrower validation**: acquire a pinned upstream
+revision and verify actual actor support for one native RequestAttempt/ResponseVersion
+in a desktop Gecko host. Map verified capabilities into this existing contract;
+report precise missing observations before proposing a native hook. Do not infer
+iPhone viability from that desktop result. Separately, automatic document-generation
+and transport-liveness observation are the next improvements to the desktop adapter.
+
+All changes are intended for review as an uncommitted Git diff. No commit, push,
+environment publication or saved onboarding draft update is part of this execution.

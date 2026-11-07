@@ -1,0 +1,46 @@
+# Observation foundation Implementation Plan
+
+> Execution: inline in this existing isolated cloud checkout. User explicitly
+> requests implementation now, with no planning approval, commits or pushes.
+
+**Goal:** Preserve a real desktop browser response and verified redirect relationship
+while broker controls remain independent of a stalled content thread.
+
+**Architecture:** A process-local broker owns a bounded append-only journal;
+an authenticated loopback control server never calls into content. A separately
+executed Playwright adapter emits versioned evidence, and an offline graph view
+keeps observation certainty and gaps explicit.
+
+**Tech stack:** Python 3.12 standard library, unittest, mypy, Ruff; optional Playwright.
+**Spec:** user's repository execution directive; platform findings in `docs/BASELINE.md`.
+
+## Global constraints
+
+No copied Eruda files, commits, pushes, sandbox bypasses or native Gecko claims.
+16 MiB journal; decimal-string uint64 sequence; explicit activation acknowledgment.
+No timestamp/payload message correlation. Synthetic fixtures visibly labeled.
+
+## Review focus
+
+Untrusted import/transport data must be validated before mutation.
+Journal exhaustion and restart must not lose delivered evidence or hide gaps.
+Old attachment/generation messages must not activate a new document.
+Handle and producer metadata must be bounded, including repeated attach/detach.
+Redaction must remove sensitive values from every exported evidence location.
+
+## Tasks
+
+1. Protocol and storage (`elyon/protocol.py`, `journal.py`, `handles.py`): write
+   failing tests for uint64 validation, immutable fsynced append, full journal,
+   restart and release/expiry; implement then run unittest.
+2. Broker/graph (`elyon/broker.py`, `graph.py`): tests first for all message families,
+   activation versus start, sequencing/dedup/gaps, backpressure, generations,
+   export/import, redaction, lifecycle. Implement then run the complete suite.
+3. Executable host (`elyon/cli.py`, `desktop.py`, `fixtures.py`): write integration
+   tests first; authenticated bounded HTTP controls, real desktop adapter,
+   deterministic fixtures and five-second stall/termination validation. Run 100
+   repeated redirect captures plus synthetic lifecycle coverage; preserve artifacts.
+4. Document exact protocol, platform limits, causal-hook dependency and commands;
+   build, typecheck, lint, test, review and record measured results.
+
+No native UI performance result can be inferred from the desktop harness.

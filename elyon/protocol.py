@@ -1,0 +1,194 @@
+"""elyon-observer/0.1 wire validation. This is not Gecko RDP."""
+
+import hashlib
+import json
+import math
+import re
+import time
+from typing import Any
+
+PROTOCOL = "elyon-observer/0.1"
+MAX_EVENT = 16 * 1024
+MAX_BATCH = 64
+MAX_MESSAGE = 256 * 1024
+FAMILIES = {
+    "LoadIntent",
+    "RequestAttempt",
+    "ResponseVersion",
+    "Redirect",
+    "CacheObservation",
+    "ServiceWorkerHandling",
+    "PolicyDecision",
+    "Exposure",
+    "Termination",
+    "Coverage",
+    "Gap",
+    "Relationship",
+}
+CERTAINTIES = {"observed", "derived", "inferred", "unavailable", "redacted"}
+
+
+class ProtocolError(ValueError):
+    """Invalid input; it must not change broker state."""
+
+
+def validate_message(message: dict[str, Any]) -> None:
+    kind = text(message.get("type"), "type")
+    if kind not in MESSAGES:
+        raise ProtocolError("unknown message type")
+    required, optional = MESSAGES[kind]
+    base = {"protocol", "type"}
+    if not required | base <= set(message) or set(message) - (required | optional | base):
+        raise ProtocolError("message fields do not match protocol")
+    if kind == "export" and not isinstance(message.get("redacted", True), bool):
+        raise ProtocolError("redacted must be boolean")
+    if kind == "gap" and message["missing"] is not None:
+        missing = message["missing"]
+        if not isinstance(missing, list) or len(missing) != 2:
+            raise ProtocolError("missing requires null or uint64 range")
+        if uint64(missing[0]) > uint64(missing[1]):
+            raise ProtocolError("missing sequence range regressed")
+
+
+def encode(value: Any) -> bytes:
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
+    ).encode("utf-8")
+
+
+# Required and optional fields for the broker-facing half of the protocol.
+MESSAGES = {
+    "hello": (set(), set()),
+    "snapshot": (set(), set()),
+    "export": (set(), {"redacted"}),
+    "attach": ({"scope", "source", "capabilities"}, set()),
+    "detach": ({"attachment"}, set()),
+    "target.upsert": ({"attachment", "target", "parent", "targetKind"}, set()),
+    "target.end": ({"attachment", "target", "reason"}, set()),
+    "start": ({"attachment", "capture", "revision", "plan", "target"}, set()),
+    "activation": ({"attachment", "capture", "revision", "target"}, set()),
+    "stop": ({"attachment", "capture"}, set()),
+    "stopped": ({"attachment", "capture"}, set()),
+    "events": ({"attachment", "batch"}, set()),
+    "gap": ({"attachment", "reason", "missing"}, set()),
+    "health": ({"attachment", "reason", "healthy"}, set()),
+    "handle": ({"attachment", "id"}, set()),
+    "read": ({"attachment", "handle", "fields"}, set()),
+    "release": ({"attachment", "handles"}, set()),
+}
+
+
+def clone(value: Any) -> Any:
+    return json.loads(encode(value))
+
+
+def text(value: Any, name: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 512:
+        raise ProtocolError(f"{name}: nonempty string <=512 required")
+    return value
+
+
+def uint64(value: Any) -> int:
+    if not isinstance(value, str) or not re.fullmatch(r"0|[1-9][0-9]{0,19}", value):
+        raise ProtocolError("uint64 requires a canonical decimal string")
+    number = int(value)
+    if number > 2**64 - 1:
+        raise ProtocolError("uint64 overflow")
+    return number
+
+
+def target(value: Any) -> None:
+    if value is not None:
+        if not isinstance(value, dict) or set(value) != {"id", "generation"}:
+            raise ProtocolError("target requires id and generation, or null")
+        text(value["id"], "target.id")
+        uint64(value["generation"])
+
+
+def validate_event(value: Any) -> None:
+    required = {
+        "protocol",
+        "attachment",
+        "capture",
+        "revision",
+        "producer",
+        "epoch",
+        "sequence",
+        "id",
+        "target",
+        "timestamp",
+        "clock",
+        "kind",
+        "point",
+        "evidence",
+        "certainty",
+        "source",
+    }
+    if not isinstance(value, dict) or set(value) != required:
+        raise ProtocolError("event envelope fields do not match protocol")
+    if len(encode(value)) > MAX_EVENT:
+        raise ProtocolError("event too large")
+    if value["protocol"] != PROTOCOL:
+        raise ProtocolError("unsupported protocol")
+    for key in ["attachment", "capture", "revision", "producer", "epoch", "id", "clock", "point"]:
+        text(value[key], key)
+    uint64(value["sequence"])
+    target(value["target"])
+    stamp = value["timestamp"]
+    if isinstance(stamp, bool) or not isinstance(stamp, (int, float)) or not math.isfinite(stamp):
+        raise ProtocolError("timestamp must be finite")
+    if value["kind"] not in FAMILIES or value["certainty"] not in CERTAINTIES:
+        raise ProtocolError("unknown family or certainty")
+    if value["source"] not in {"synthetic", "desktop-chromium-playwright", "native-gecko"}:
+        raise ProtocolError("unknown source")
+    evidence = value["evidence"]
+    if not isinstance(evidence, dict):
+        raise ProtocolError("evidence object required")
+    if value["kind"] == "Relationship":
+        for key in ["from", "to", "relation"]:
+            text(evidence.get(key), key)
+        support = evidence.get("support", [])
+        if "rule" in evidence:
+            text(evidence["rule"], "inference rule")
+        if not isinstance(support, list) or any(not isinstance(x, str) or not x for x in support):
+            raise ProtocolError("invalid support IDs")
+        if value["certainty"] == "inferred":
+            text(evidence.get("rule"), "inference rule")
+        elif not support:
+            raise ProtocolError("relationship requires supporting evidence IDs")
+
+
+def event(
+    attachment: str,
+    capture: str,
+    producer: str,
+    epoch: str,
+    sequence: int,
+    kind: str,
+    evidence: dict[str, Any],
+    *,
+    target: dict[str, str] | None = None,
+    revision: str = "1",
+    certainty: str = "observed",
+    point: str = "synthetic-fixture",
+    source: str = "synthetic",
+) -> dict[str, Any]:
+    identity = encode([attachment, producer, epoch, str(sequence)])
+    return {
+        "protocol": PROTOCOL,
+        "attachment": attachment,
+        "capture": capture,
+        "revision": revision,
+        "producer": producer,
+        "epoch": epoch,
+        "sequence": str(sequence),
+        "id": hashlib.sha256(identity).hexdigest(),
+        "target": target,
+        "timestamp": time.monotonic(),
+        "clock": f"{producer}:{epoch}:monotonic",
+        "kind": kind,
+        "point": point,
+        "evidence": evidence,
+        "certainty": certainty,
+        "source": source,
+    }
