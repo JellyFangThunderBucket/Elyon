@@ -1,0 +1,1 @@
+{"name":"elyon-workbench","version":"0.2.0","private":true,"scripts":{"start":"python3 -m elyon.workbench","chii":"chii start -h 127.0.0.1 -p 8090"},"dependencies":{"chii":"1.15.5"},"overrides":{"uuid":"11.1.1","qs":"6.17.1"}}

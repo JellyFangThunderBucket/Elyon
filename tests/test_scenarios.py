@@ -1,0 +1,60 @@
+"""Synthetic broker contracts, never evidence of native engine behavior."""
+
+import unittest
+
+from tests.test_broker import BrokerFixture
+
+
+class ProvenanceScenarios(BrokerFixture, unittest.TestCase):
+    def test_revalidation_keeps_wire_and_page_visible_response_separate(self):
+        self.start()
+        request = self.ev()
+        wire = self.ev(2, "ResponseVersion", {"status": 304, "point": "native-channel"})
+        cached = self.ev(3, "CacheObservation", {"action": "revalidated", "entry": "cache-v1"})
+        exposed = self.ev(4, "Exposure", {"status": 200, "api": "fetch"})
+        self.ingest(request, wire, cached, exposed)
+        nodes = self.cmd("snapshot")["graph"]["nodes"]
+        self.assertEqual([n["evidence"].get("status") for n in nodes], [None, 304, None, 200])
+        self.assertEqual(self.cmd("snapshot")["graph"]["relationships"], [])
+
+    def test_sw_handling_does_not_imply_cache_storage_or_network_origin(self):
+        self.start()
+        self.ingest(
+            self.ev(
+                kind="ServiceWorkerHandling",
+                payload={"controlled": True, "responseOrigin": {"certainty": "unavailable"}},
+            )
+        )
+        node = self.cmd("snapshot")["graph"]["nodes"][0]
+        self.assertEqual(node["evidence"]["responseOrigin"]["certainty"], "unavailable")
+        self.assertNotIn(
+            "CacheObservation", [n["kind"] for n in self.cmd("snapshot")["graph"]["nodes"]]
+        )
+
+    def test_policy_block_and_unexplained_failure_are_separate_observations(self):
+        self.start()
+        self.ingest(
+            self.ev(kind="PolicyDecision", payload={"action": "blocked", "policy": "fixture-csp"}),
+            self.ev(2, "Termination", {"failure": "failed", "policy": None}),
+        )
+        nodes = self.cmd("snapshot")["graph"]["nodes"]
+        self.assertEqual(nodes[0]["evidence"]["action"], "blocked")
+        self.assertIsNone(nodes[1]["evidence"]["policy"])
+
+    def test_frames_and_workers_retain_explicit_identities(self):
+        self.start()
+        for serial, kind in [(1, "frame"), (2, "dedicated-worker")]:
+            identity = {"id": f"child-{serial}", "generation": "1"}
+            self.cmd(
+                "target.upsert",
+                attachment=self.a,
+                target=identity,
+                parent={"id": "document", "generation": "1"},
+                targetKind=kind,
+            )
+            value = self.ev(serial)
+            value["target"] = identity
+            self.ingest(value)
+        nodes = self.cmd("snapshot")["graph"]["nodes"]
+        self.assertEqual([n["target"]["id"] for n in nodes], ["child-1", "child-2"])
+        self.assertEqual(self.cmd("snapshot")["graph"]["relationships"], [])
