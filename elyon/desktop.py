@@ -5,6 +5,7 @@ import asyncio
 import json
 import math
 import multiprocessing
+import os
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -286,7 +287,13 @@ async def run_validation(output: Path, runs: int = 100) -> dict[str, Any]:
                 # Keep Chromium's sandbox ON. Run the host outside a nested command
                 # sandbox if required; never substitute --no-sandbox.
                 browser = await playwright.chromium.launch(
-                    executable_path="/usr/bin/chromium", headless=True, chromium_sandbox=True
+                    executable_path=(
+                        None
+                        if os.getenv("ELYON_CHROMIUM_EXECUTABLE") == "bundled"
+                        else os.getenv("ELYON_CHROMIUM_EXECUTABLE", "/usr/bin/chromium")
+                    ),
+                    headless=True,
+                    chromium_sandbox=True,
                 )
                 try:
                     version = browser.version
@@ -444,7 +451,13 @@ async def run_fixture_validation(output: Path) -> dict[str, Any]:
         with fixture_server() as origin:
             async with async_playwright() as playwright:
                 browser = await playwright.chromium.launch(
-                    executable_path="/usr/bin/chromium", headless=True, chromium_sandbox=True
+                    executable_path=(
+                        None
+                        if os.getenv("ELYON_CHROMIUM_EXECUTABLE") == "bundled"
+                        else os.getenv("ELYON_CHROMIUM_EXECUTABLE", "/usr/bin/chromium")
+                    ),
+                    headless=True,
+                    chromium_sandbox=True,
                 )
                 try:
                     context = await browser.new_context()

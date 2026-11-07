@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Elyon device lab</title>
+    <link rel="stylesheet" href="./device-demo.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">ELYON / DEVICE LAB / 0.4</p>
+      <h1>A console you can test.</h1>
+      <p>
+        Page-level tools for a page you control. No Python, broker, Chii server,
+        or native engine bridge is connected here.
+      </p>
+      <div class="actions">
+        <button id="install">Open console</button
+        ><button id="remove">Remove console</button>
+      </div>
+      <p id="installation" role="status">
+        Loading the console module… If this message remains, check module
+        loading, HTTPS, and the page’s security policy.
+      </p>
+      <section aria-labelledby="fixtures-title">
+        <h2 id="fixtures-title">Exercise real browser behavior</h2>
+        <div class="actions">
+          <button id="counter">Count: 0</button
+          ><button id="fetch">Fetch JSON</button
+          ><button id="xhr">XHR JSON</button
+          ><button id="abort">Abort XHR</button
+          ><button id="warning">Log a warning</button
+          ><button id="storage">Write demo storage</button>
+        </div>
+        <pre id="output" aria-live="polite">
+Ready. These controls create local test activity; no telemetry is sent.</pre
+        >
+        <article id="inspect-target" data-fixture="element">
+          <h3>Inspect this element</h3>
+          <p>
+            Select <code>#inspect-target</code> in Elements, or choose Pick and
+            tap here.
+          </p>
+        </article>
+      </section>
+      <section>
+        <h2>Try it on your phone</h2>
+        <ol>
+          <li>
+            Open Console. Drag its ELYON handle or its launcher; drag ↕ to
+            resize.
+          </li>
+          <li>
+            Use Settings for the existing 20 themes and capture preferences.
+          </li>
+          <li>
+            In JS mode run <code>document.title</code>. In Await mode run
+            <code>await Promise.resolve(42)</code>.
+          </li>
+          <li>
+            Minimize the panel to use these request fixtures, then open Network.
+          </li>
+          <li>
+            Check Info for observed capabilities. An installed page console does
+            not grant privileged Safari or Gecko access.
+          </li>
+        </ol>
+        <p>
+          This console shares the page’s thread. It cannot remain responsive if
+          you block that thread with an infinite loop. Exports redact console
+          messages and URLs; DOM and storage values stay local unless you
+          explicitly copy them.
+        </p>
+      </section>
+      <section>
+        <h2>Device test notes</h2>
+        <p>
+          Record your actual browser/version, phone model, iOS version,
+          orientation, keyboard, and any denied capabilities. Browser emulation
+          is not physical-device validation.
+        </p>
+        <p>
+          <a href="./manifest.json">Build manifest</a> ·
+          <a href="https://github.com/JellyFangThunderBucket/Elyon"
+            >Source and issue reports</a
+          >
+        </p>
+      </section>
+    </main>
+    <script type="module" src="./device-demo.js"></script>
+  </body>
+</html>

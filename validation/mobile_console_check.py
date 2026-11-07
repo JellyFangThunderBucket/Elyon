@@ -14,7 +14,12 @@ async def main():
     Path("artifacts").mkdir(exist_ok=True)
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            executable_path="/usr/bin/chromium", chromium_sandbox=True
+            executable_path=(
+                None
+                if os.getenv("ELYON_CHROMIUM_EXECUTABLE") == "bundled"
+                else os.getenv("ELYON_CHROMIUM_EXECUTABLE", "/usr/bin/chromium")
+            ),
+            chromium_sandbox=True,
         )
         page = await browser.new_page(
             viewport={"width": 390, "height": 844},
@@ -85,6 +90,7 @@ async def main():
             == 200
         )
         await console.locator("[data-tab=network]").click()
+        await console.locator(".request").nth(1).wait_for()
         assert await console.locator(".request").count() == 2
         assert "200" in await console.locator("#requests").inner_text()
         await console.locator("[data-tab=elements]").click()

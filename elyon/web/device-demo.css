@@ -1,0 +1,104 @@
+:root {
+  color-scheme: dark;
+  font:
+    16px/1.6 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: #101517;
+  color: #eef3f7;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+main {
+  max-width: 760px;
+  margin: auto;
+  padding: 24px 18px 70px;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+h2 {
+  font-size: 20px;
+}
+h3 {
+  font-size: 16px;
+}
+p,
+li {
+  color: #b2bec8;
+}
+section {
+  border-top: 1px solid #4c5b65;
+  margin-top: 28px;
+  padding-top: 10px;
+}
+button {
+  font: inherit;
+  color: #eef3f7;
+  background: #192125;
+  border: 1px solid #4c5b65;
+  border-radius: 0;
+  min-height: 46px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #76e5c1;
+  outline-offset: 3px;
+}
+button:disabled {
+  opacity: 0.5;
+}
+#install {
+  background: #76e5c1;
+  color: #101517;
+  font-weight: 650;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.eyebrow {
+  font:
+    11px ui-monospace,
+    monospace;
+  color: #76e5c1;
+  letter-spacing: 2px;
+}
+pre {
+  font:
+    12px/1.6 ui-monospace,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+  background: #192125;
+  border: 1px solid #4c5b65;
+  padding: 12px;
+}
+code {
+  color: #a4e5bc;
+  overflow-wrap: anywhere;
+}
+a {
+  color: #76e5c1;
+}
+#inspect-target {
+  padding: 12px;
+  border: 1px dashed #76e5c1;
+}
+#installation {
+  font-size: 12px;
+}

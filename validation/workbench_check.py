@@ -16,17 +16,36 @@ CHII = os.environ.get("ELYON_TEST_CHII_URL", "http://127.0.0.1:8090")
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            executable_path="/usr/bin/chromium", chromium_sandbox=True
+            executable_path=(
+                None
+                if os.getenv("ELYON_CHROMIUM_EXECUTABLE") == "bundled"
+                else os.getenv("ELYON_CHROMIUM_EXECUTABLE", "/usr/bin/chromium")
+            ),
+            chromium_sandbox=True,
         )
         page = await browser.new_page(viewport={"width": 1440, "height": 1080})
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         await page.goto(BASE)
-        await page.get_by_role("button", name="Run browser capture").click()
-        await page.get_by_text("Evidence survived the renderer crash", exact=True).wait_for(
-            timeout=60000
-        )
-        assert await page.locator("#observations").inner_text() != "0"
+        run_ids = []
+        for _ in range(2):
+            async with page.expect_response(
+                lambda response: response.url.endswith("/api/run")
+            ) as posted:
+                await page.get_by_role("button", name="Run browser capture").click()
+            payload = await (await posted.value).json()
+            run_ids.append(payload["run"])
+            await page.wait_for_function(
+                """run => {
+                const status=document.querySelector('#status');
+                return status.dataset.run===run && status.textContent===
+                    'Evidence survived the renderer crash';
+            }""",
+                arg=payload["run"],
+                timeout=60000,
+            )
+            assert await page.locator("#observations").inner_text() != "0"
+        assert run_ids[0] != run_ids[1]
         await page.locator("tbody tr").first.click()
         assert "RequestAttempt" in await page.locator("#json").inner_text()
         await page.locator("#search").fill("impossible-resource")

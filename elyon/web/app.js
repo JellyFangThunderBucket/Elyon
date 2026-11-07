@@ -3,6 +3,9 @@ let snapshot = null,
   report = null,
   imported = false,
   selection = null;
+let generation = 0,
+  startPending = false,
+  expectedRun = null;
 const toast = (t) => {
   $("#toast").textContent = t;
   $("#toast").hidden = false;
@@ -96,11 +99,15 @@ function render() {
       : "Awaiting completed browser capture";
 }
 async function poll() {
-  if (imported) return;
+  if (imported || startPending) return;
+  const requestedGeneration = generation;
   try {
     const r = await fetch("/api/state");
     if (!r.ok) throw Error();
     const state = await r.json();
+    if (requestedGeneration !== generation || imported || startPending) return;
+    if (expectedRun && state.run !== expectedRun) return;
+    $("#status").dataset.run = state.run || "";
     snapshot = state.snapshot;
     report = state.report;
     $("#run").disabled = state.running;
@@ -137,7 +144,18 @@ async function poll() {
 $("#search").oninput = render;
 $("#kind").onchange = render;
 $("#run").onclick = async () => {
+  generation++;
+  startPending = true;
+  expectedRun = null;
   imported = false;
+  report = null;
+  snapshot = null;
+  $("#run").disabled = true;
+  $("#status").textContent = "Starting browser capture";
+  $("#status").dataset.run = "";
+  $("#run-label").textContent = "STARTING";
+  $("#export").disabled = true;
+  render();
   selection = null;
   $("#detail").open = false;
   $("#json").textContent = "Select a row to inspect its full evidence.";
@@ -148,9 +166,15 @@ $("#run").onclick = async () => {
       body: "{}",
     });
     if (!r.ok) throw Error("Could not start capture");
+    expectedRun = (await r.json()).run;
+    startPending = false;
     await poll();
   } catch (e) {
+    startPending = false;
+    expectedRun = null;
+    $("#run").disabled = false;
     toast(e.message);
+    await poll();
   }
 };
 $("#export").onclick = () => {

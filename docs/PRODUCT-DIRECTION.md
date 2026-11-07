@@ -16,11 +16,13 @@ crashes, I want the request and redirect chain that led to it. When I share a re
 I want sensitive payloads removed and uncertainty preserved. Those are the strongest
 reasons for Elyon to exist alongside an established mobile console.
 
-## Implemented in this PR
+## Implemented now
 
 - Square, isolated Shadow DOM page console; pinned Settings and scrollable tool tabs.
 - Console capture and async-result REPL, level/text filters, and bounded retention.
-- Fetch/XHR metadata, DOM selector inspection/highlight, storage viewing, and page info.
+- Fetch/XHR lifecycle metadata with reentrant reuse handling and explicit gaps.
+- DOM selector/picker inspection, computed metadata, tracking highlights, and storage editing.
+- Draggable launcher/panel, resizing, visual-viewport layout, and a standalone static device lab.
 - 20 independently authored palettes: ten dark and ten light. Shared palettes also
   apply to the desktop workbench. Text token contrast is checked at full opacity.
 - Persistent typography, height, opacity, wrapping, timestamps, follow-scroll,
@@ -48,6 +50,7 @@ Eruda remain richer than Elyon's bounded previews; Elyon does not claim parity.
 
 | Experience | Implementation needed | Acceptance target, not a current claim |
 | --- | --- | --- |
+| Physical Safari/Reynard validation | Run the device acceptance guide, keyboard/orientation and long-session profiling | Signed-off results on the actual supported phones |
 | Phone to inspector without setup friction | Authenticated short-code pairing, QR, transport diagnostics | First authorized target within 30 seconds on a known network |
 | A dead page leaves an inspectable session | Native independent recorder, persistent capture list, reconnect | All acknowledged evidence survives renderer termination |
 | Explain a request's history | Correlated native request IDs and explicit coverage gaps | Redirect chain without URL/time identity guesses |
